@@ -1,49 +1,13 @@
-#include <iostream>
-#include<fstream>
-#include<sstream>
-#include<string>
-#include<optional>
-#include<vector>
-
-#include"tokenize.h"
 
 
-std::string code_generateration(std::vector<Token> tokens)
-{
-    std::stringstream stream;
-    stream << "global _start\n";
-    stream << "_start:\n";
+#include"generator.h"
 
-    for (int i = 0; i < tokens.size(); i++)
-    {
-        if (tokens.at(i).type == TokenType::ret)
-        {
-            if (i + 1 < tokens.size() && tokens.at(i + 1).type == TokenType::int_val)
-            {
-                stream << "    mov rax,60\n";
-                stream << "    mov rdi," << tokens.at(i + 1).value.value() << "\n";
-                stream << "    syscall\n";
-                i++;
-            }
-            else
-            {
-                std::cout << "Cant find value!!!" << std::endl;
-                exit(EXIT_FAILURE);
-            }
-        }
-
-    }
-
-    std::string str = stream.str();
-
-    return str;
-}
 
 int main(int argc,char** argv)
 {
-	std::string filename;
-	std::cout << "Enter file name: ";
-	std::getline(std::cin, filename);
+	std::string filename = "main.csl";
+	//std::cout << "Enter file name: ";
+	//std::getline(std::cin, filename);
 
     std::string source;
     {
@@ -56,11 +20,22 @@ int main(int argc,char** argv)
     Tokenize tokenize(source);
 
     std::vector<Token> tokens = tokenize.tokenazetion();
+    Parser parser(tokens);
+
+    std::optional<NodeProg> prog = parser.parse_prog();
+
+    if (!prog.has_value())
+    {
+        exit(EXIT_FAILURE);
+        std::cerr << "Problem with generation code!!!" << std::endl;
+    }
 
     {
-        std::fstream out("out.asm", std::ios::out);
-        out << code_generateration(tokens);
+        Generator generator(prog.value());
+        std::fstream file("out.asm", std::ios::out);
+        file << generator.gen_prog();;
     }
+
 
     system("bash");
 

@@ -4,7 +4,13 @@ enum TokenType
 {
 	ret,
 	int_val,
-	semi
+	semi,
+	integer,
+	MAIN,
+	open_paren,
+	close_paren,
+	open_brek,
+	close_brek
 };
 
 struct Token
@@ -41,9 +47,43 @@ public:
 					tokens.push_back({ .type = TokenType::ret });
 					str.clear();
 				}
+				else if (str == "int")
+				{
+					tokens.push_back({ .type = TokenType::integer });
+					str.clear();
+				}
+				else if (str == "main")
+				{
+					tokens.push_back({ .type = TokenType::MAIN });
+					str.clear();
+				}
 			}
 			else if (peek().value() == ' ')
 			{
+				consume();
+				continue;
+			}
+			else if (peek().value() == '(')
+			{
+				tokens.push_back({ .type = TokenType::open_paren });
+				consume();
+				continue;
+			}
+			else if (peek().value() == ')')
+			{
+				tokens.push_back({ .type = TokenType::close_paren });
+				consume();
+				continue;
+			}
+			else if (peek().value() == '{')
+			{
+				tokens.push_back({ .type = TokenType::open_brek });
+				consume();
+				continue;
+			}
+			else if (peek().value() == '}')
+			{
+				tokens.push_back({ .type = TokenType::close_brek });
 				consume();
 				continue;
 			}
@@ -64,6 +104,20 @@ public:
 				tokens.push_back({ .type = TokenType::int_val,.value = str });
 				str.clear();
 			}
+			else
+				consume();
+		}
+
+		if (tokens.size() < 4 || tokens[0].type != TokenType::integer || tokens[1].type != TokenType::MAIN || tokens[2].type != TokenType::open_paren || tokens[3].type != TokenType::close_paren ||
+			tokens[4].type != TokenType::open_brek || tokens[tokens.size() - 1].type != TokenType::close_brek)
+		{
+			std::cerr << "Dont have entry points!!" << std::endl;
+			exit(EXIT_FAILURE);
+		}
+		else
+		{
+			tokens.erase(tokens.begin(),tokens.begin() + 5);
+			tokens.erase(tokens.end() - 1);
 		}
 
 		return tokens;
