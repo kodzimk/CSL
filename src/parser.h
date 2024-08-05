@@ -24,7 +24,8 @@ class Parser
 {
  public:
 	Parser(std::vector<Token> tokens)
-		: tokens(std::move(tokens))
+		: tokens(std::move(tokens)),
+		 m_index(0)
 	{
 
 	}
@@ -78,7 +79,6 @@ private:
 		return tokens.at(m_index++);
 	}
 
-	size_t m_index;
-
+	size_t m_index = 0;
 	std::vector<Token> tokens;
 };

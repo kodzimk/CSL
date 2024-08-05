@@ -1,4 +1,7 @@
 int main()
 {
-  return 1;
+   int* a = malloc(int);
+
+   free(a);
+  return 100;
 }
