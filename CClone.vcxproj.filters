@@ -22,4 +22,13 @@
   <ItemGroup>
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="main.csl" />
+    <None Include="run.sh" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\tokenize.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>
