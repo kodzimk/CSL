@@ -7,10 +7,12 @@ enum TokenType
 	semi,
 	integer,
 	MAIN,
+	variable,
 	open_paren,
 	close_paren,
 	open_brek,
-	close_brek
+	close_brek,
+	eq
 };
 
 struct Token
@@ -57,6 +59,11 @@ public:
 					tokens.push_back({ .type = TokenType::MAIN });
 					str.clear();
 				}
+				else
+				{
+						tokens.push_back({ .type = TokenType::variable, .value = str });
+					str.clear();
+				}
 			}
 			else if (peek().value() == ' ')
 			{
@@ -84,6 +91,12 @@ public:
 			else if (peek().value() == '}')
 			{
 				tokens.push_back({ .type = TokenType::close_brek });
+				consume();
+				continue;
+			}
+			else if (peek().value() == '=')
+			{
+				tokens.push_back({ .type = TokenType::eq });
 				consume();
 				continue;
 			}
