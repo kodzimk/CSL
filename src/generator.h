@@ -40,8 +40,11 @@ public:
 				}
 				else
 				{
-					gen.m_output << "   mov rax," << term_var.value.value() << '\n';
-					gen.push("rax");
+					if (term_var.value.has_value())
+					{
+						gen.m_output << "   mov raxASA," << term_var.value.value() << '\n';
+						gen.push("rax");
+					}
 				}
 			}
 		};
@@ -91,9 +94,8 @@ public:
 				if (gen.m_vars.contains(stat_eq.variableName))
 				{
 					gen.gen_expr(stat_eq.expr);
-					gen.push("rax");
-					gen.m_vars[stat_eq.variableName] = gen.m_stack_size-1;
-		
+					gen.m_vars[stat_eq.variableName] = gen.m_stack_size - 1;
+		               
 				}
 				else
 				{

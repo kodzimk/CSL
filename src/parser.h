@@ -71,15 +71,6 @@ public:
 			term.term = int_val;
 			return term;
 		}
-		else if (peek().value().type == TokenType::variable && peek(2).has_value() && peek(2).value().type == TokenType::int_val)
-		{
-			consume();
-			consume();
-			NodeTerm term;
-			NodeTermVar var_val = { .value = consume().value, };
-			term.term = var_val;
-			return term;
-		}
 		else if (peek().value().type == TokenType::variable)
 		{
 			NodeTerm term;
@@ -104,22 +95,12 @@ public:
 
 	std::optional<NodeStat> parse_stat()
 	{
-		if (peek().has_value() && peek().value().type == TokenType::ret && peek(1).has_value() && peek(1).value().type == TokenType::int_val &&
+		if (peek().has_value() && peek().value().type == TokenType::ret && peek(1).has_value() && (peek(1).value().type == TokenType::int_val || peek(1).value().type == TokenType::variable) &&
 			peek(2).has_value() && peek(2).value().type == TokenType::semi)
 		{
 			consume();
 			NodeStat stat;
 			NodeStatExit stat_exit = { .expr = parse_expr().value()};
-			consume();
-			stat.stat = stat_exit;
-			return stat;
-		}
-		else if (peek().has_value() && peek().value().type == TokenType::ret && peek(1).has_value() && peek(1).value().type == TokenType::variable &&
-			peek(2).has_value() && peek(2).value().type == TokenType::semi)
-		{
-			consume();
-			NodeStat stat;
-			NodeStatExit stat_exit = { .expr = parse_expr().value() };
 			consume();
 			stat.stat = stat_exit;
 			return stat;
@@ -130,25 +111,27 @@ public:
 			consume();
 			NodeStat stat;
 			NodeStatVar stat_var;
-			stat_var.name = peek().value().value.value();
+			stat_var.name = consume().value.value();
+			consume();
 			stat_var.expr = parse_expr().value();
 			consume();
 			
 			stat.stat = stat_var;
 			return stat;
 		}
-		else if (peek().has_value() && peek().value().type == TokenType::variable && peek(1).has_value() && peek(1).value().type == TokenType::eq)
+		else if (peek().has_value() && peek().value().type == TokenType::variable && peek(1).has_value() && peek(1).value().type == TokenType::eq 
+			&& peek(2).has_value() && (peek(2).value().type == TokenType::int_val || peek(2).value().type == TokenType::variable))
 		{
 			NodeStat stat;
 			NodeStateEq stat_eq;
-			stat_eq.variableName = peek().value().value.value();
+			stat_eq.variableName = consume().value.value();
+			consume();
 			stat_eq.expr = parse_expr().value();
 			consume();
 
 			stat.stat = stat_eq;
 			return stat;
 		}
-
 
 		return {};
 	}
