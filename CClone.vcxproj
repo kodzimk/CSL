@@ -143,6 +143,7 @@
     <None Include="run.sh" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\arena.h" />
     <ClInclude Include="src\parser.h" />
     <ClInclude Include="src\tokenize.h" />
   </ItemGroup>

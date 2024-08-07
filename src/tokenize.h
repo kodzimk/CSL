@@ -12,14 +12,64 @@ enum TokenType
 	close_paren,
 	open_brek,
 	close_brek,
-	eq
+	eq,
+     plus,
+	 star,
+	 minus,
+	 fslash
 };
+
+inline std::string to_string(const TokenType type)
+{
+	switch (type) {
+	case TokenType::ret:
+		return "`exit`";
+	case TokenType::int_val:
+		return "int literal";
+	case TokenType::semi:
+		return "`;`";
+	case TokenType::open_paren:
+		return "`(`";
+	case TokenType::close_paren:
+		return "`)`";
+	case TokenType::integer:
+		return "identifier";
+	case TokenType::variable:
+		return "`let`";
+	case TokenType::eq:
+		return "`=`";
+	case TokenType::plus:
+		return "`+`";
+	case TokenType::star:
+		return "`*`";
+	case TokenType::minus:
+		return "`-`";
+	case TokenType::fslash:
+		return "`/`";
+	}
+	assert(false);
+}
 
 struct Token
 {
 	TokenType type;
+	int line;
 	std::optional<std::string> value;
 };
+
+inline std::optional<int> bin_prec(const TokenType type)
+{
+	switch (type) {
+	case TokenType::minus:
+	case TokenType::plus:
+		return 0;
+	case TokenType::fslash:
+	case TokenType::star:
+		return 1;
+	default:
+		return {};
+	}
+}
 
 class Tokenize
 {
@@ -79,6 +129,30 @@ public:
 			else if (peek().value() == ')')
 			{
 				tokens.push_back({ .type = TokenType::close_paren });
+				consume();
+				continue;
+			}
+			else if (peek().value() == '+')
+			{
+				tokens.push_back({ .type = TokenType::plus });
+				consume();
+				continue;
+			}
+			else if (peek().value() == '-')
+			{
+				tokens.push_back({ .type = TokenType::minus });
+				consume();
+				continue;
+			}
+			else if (peek().value() == '*')
+			{
+				tokens.push_back({ .type = TokenType::star });
+				consume();
+				continue;
+			}
+			else if (peek().value() == '/')
+			{
+				tokens.push_back({ .type = TokenType::fslash });
 				consume();
 				continue;
 			}
