@@ -86,6 +86,21 @@ public:
 					exit(EXIT_FAILURE);
 				}
 			}
+			void operator()(const NodeStateEq stat_eq)
+			{
+				if (gen.m_vars.contains(stat_eq.variableName))
+				{
+					gen.gen_expr(stat_eq.expr);
+					gen.push("rax");
+					gen.m_vars[stat_eq.variableName] = gen.m_stack_size-1;
+		
+				}
+				else
+				{
+					std::cerr << "Cant find variable not declared!!!" << std::endl;
+					exit(EXIT_FAILURE);
+				}
+			}
 		};
 		StatVisitor visitor = { .gen = *this };
 		std::visit(visitor, stat.stat);

@@ -30,6 +30,12 @@ struct NodeStatVar
 	std::string name;
 };
 
+struct NodeStateEq
+{
+	NodeExpr expr;
+	std::string variableName;
+};
+
 
 struct NodeStatExit
 {
@@ -38,7 +44,7 @@ struct NodeStatExit
 
 struct NodeStat
 {
-	std::variant<NodeStatExit,NodeStatVar> stat;
+	std::variant<NodeStatExit,NodeStatVar,NodeStateEq> stat;
 };
 
 struct NodeProg
@@ -129,6 +135,17 @@ public:
 			consume();
 			
 			stat.stat = stat_var;
+			return stat;
+		}
+		else if (peek().has_value() && peek().value().type == TokenType::variable && peek(1).has_value() && peek(1).value().type == TokenType::eq)
+		{
+			NodeStat stat;
+			NodeStateEq stat_eq;
+			stat_eq.variableName = peek().value().value.value();
+			stat_eq.expr = parse_expr().value();
+			consume();
+
+			stat.stat = stat_eq;
 			return stat;
 		}
 
