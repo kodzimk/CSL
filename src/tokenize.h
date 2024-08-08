@@ -16,7 +16,11 @@ enum TokenType
      plus,
 	 star,
 	 minus,
-	 fslash
+	 fslash,
+	 character,
+	 open_char,
+	 close_char,
+	 char_val
 };
 
 inline std::string to_string(const TokenType type)
@@ -86,10 +90,10 @@ public:
 		std::string str;
 		while (peek().has_value())
 		{
-			if (isalpha(peek().value()))
+			if (isalpha(peek().value()[0]))
 			{
 				str.push_back(consume());
-				while (peek().has_value() && isalpha(peek().value()))
+				while (peek().has_value() && isalpha(peek().value()[0]))
 				{
 					str.push_back(consume());
 				}
@@ -109,81 +113,101 @@ public:
 					tokens.push_back({ .type = TokenType::MAIN });
 					str.clear();
 				}
+				else if (str == "char")
+				{
+					tokens.push_back({ .type = TokenType::character });
+					str.clear();
+				}
 				else
 				{
 						tokens.push_back({ .type = TokenType::variable, .value = str });
 					str.clear();
 				}
 			}
-			else if (peek().value() == ' ')
+			else if (peek().value()[0] == ' ')
 			{
 				consume();
 				continue;
 			}
-			else if (peek().value() == '(')
+			else if (peek().value()[0] == '(')
 			{
 				tokens.push_back({ .type = TokenType::open_paren });
 				consume();
 				continue;
 			}
-			else if (peek().value() == ')')
+			else if (peek().value()[0] == ')')
 			{
 				tokens.push_back({ .type = TokenType::close_paren });
 				consume();
 				continue;
 			}
-			else if (peek().value() == '+')
+			else if (peek().value()[0] == '+')
 			{
 				tokens.push_back({ .type = TokenType::plus });
 				consume();
 				continue;
 			}
-			else if (peek().value() == '-')
+			else if (peek().value()[0] == '-')
 			{
 				tokens.push_back({ .type = TokenType::minus });
 				consume();
 				continue;
 			}
-			else if (peek().value() == '*')
+			else if (peek().value()[0] == '*')
 			{
 				tokens.push_back({ .type = TokenType::star });
 				consume();
 				continue;
 			}
-			else if (peek().value() == '/')
+			else if (peek().value() == "'")
+			{
+				tokens.push_back({ .type = TokenType::open_char });
+				consume();
+				if (peek().has_value() && peek(1).has_value() && peek(1).value() == "'")
+				{
+					std::string name;
+					name += consume();
+					tokens.push_back({.type = TokenType::char_val, .value = name});
+					tokens.push_back({ .type = TokenType::close_char });
+					consume();
+				}
+
+				continue;
+			}
+			else if (peek().value()[0] == '/')
 			{
 				tokens.push_back({ .type = TokenType::fslash });
 				consume();
 				continue;
 			}
-			else if (peek().value() == '{')
+			else if (peek().value()[0] == '{')
 			{
 				tokens.push_back({ .type = TokenType::open_brek });
 				consume();
 				continue;
 			}
-			else if (peek().value() == '}')
+			else if (peek().value()[0] == '}')
 			{
 				tokens.push_back({ .type = TokenType::close_brek });
 				consume();
 				continue;
 			}
-			else if (peek().value() == '=')
+			else if (peek().value()[0] == '=')
 			{
 				tokens.push_back({ .type = TokenType::eq });
 				consume();
 				continue;
 			}
-			else if (peek().value() == ';')
+			else if (peek().value()[0] == ';')
 			{
 				tokens.push_back({ .type = TokenType::semi });
 				consume();
 				continue;
 			}
-			else if (isdigit(peek().value()))
+			else if (isdigit(peek().value()[0]))
 			{
 				str.push_back(consume());
-				while (peek().has_value() && isdigit(peek().value()))
+				while (peek().has_value() && isdigit(peek().value()[0]))
 				{
 					str.push_back(consume());
 				}
@@ -211,12 +235,14 @@ public:
 	}
 
 private:
-	[[nodiscard]] std::optional<char> peek(size_t offset = 0) const
+	[[nodiscard]] std::optional<std::string> peek(size_t offset = 0) const
 	{
 		if (m_index + offset >= filename.length()) {
 			return {};
 		}
-		return filename.at(m_index + offset);
+		std::string res;
+		res += filename.at(m_index + offset);
+		return res;
 	}
 
 	char consume()

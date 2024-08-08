@@ -43,14 +43,35 @@ public:
 				{
 					if (term_var->value.has_value())
 					{
-						gen.m_output << "   mov raxASA," << term_var->value.value() << '\n';
-						gen.push("rax");
+						std::vector<std::string> val = {"'", term_var->value.value(),"'"};
+						std::string val1;
+						for (auto s : val)
+						{
+							val1 += s;
+						}
+
+						std::cout << val1 << std::endl;
+						gen.m_output << "   mov rax," << val1 << '\n';
+						gen.m_output << "   push rax\n";
+						gen.m_stack_size++;
 					}
 				}
 			}
 			void operator()( NodeTermParen* term_paren)
 			{
 				gen.gen_expr(term_paren->expr);
+			}
+			void operator()(NodeTermCharVal* char_val)
+			{
+				std::vector<std::string> val = { "'", char_val->value.value(),"'" };
+				std::string val1;
+				for (auto s : val)
+				{
+					val1 += s;
+				}
+
+				gen.m_output << "   mov rax," << val1 << '\n';
+				gen.push("rax");
 			}
 		};
 		TermVisitor visitor = { .gen = *this };
@@ -131,6 +152,7 @@ public:
 			void operator()(const NodeStatExit* stat_exit)
 			{
 				gen.gen_expr(stat_exit->expr);
+
 				gen.m_output << "    mov rax,60\n";
 				gen.pop("rdi");
 				gen.m_output << "    syscall\n";
@@ -153,8 +175,7 @@ public:
 				if (gen.m_vars.contains(stat_eq->variableName))
 				{
 					gen.gen_expr(stat_eq->expr);
-					gen.m_vars[stat_eq->variableName] = gen.m_stack_size - 1;
-		               
+					gen.m_vars.at(stat_eq->variableName) = gen.m_stack_size - 1;        
 				}
 				else
 				{
@@ -171,6 +192,8 @@ public:
 	{
 		m_output << "global _start\n";
 		m_output << "_start:\n";
+		
+
 		for (int i = 0; i < prog.stats.size(); i++)
 		{
 			gen_stat(prog.stats[i]);

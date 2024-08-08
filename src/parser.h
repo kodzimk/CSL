@@ -16,6 +16,10 @@ struct NodeTermIntVal
 	std::optional<std::string> value;
 };
 
+struct NodeTermCharVal {
+	std::optional<std::string> value;
+};
+
 struct NodeExpr;
 
 struct NodeTermParen {
@@ -47,7 +51,7 @@ struct NodeBinExpr {
 };
 
 struct NodeTerm {
-	std::variant<NodeTermIntVal*, NodeTermVar*,NodeTermParen*> var;
+	std::variant<NodeTermIntVal*, NodeTermVar*,NodeTermParen*,NodeTermCharVal*> var;
 };
 
 struct NodeExpr {
@@ -126,6 +130,15 @@ public:
 			term_paren->expr = expr.value();
 			NodeTerm* term = m_allocator.emplace<NodeTerm>();
 			term->var = term_paren;
+			return term;
+		}
+		else if (auto int_lit = try_consume(TokenType::open_char))
+		{
+			NodeTermVar* char_val = m_allocator.emplace<NodeTermVar>();
+			char_val->value = consume().value;
+			NodeTerm* term = m_allocator.emplace<NodeTerm>();
+			term->var = char_val;
+			consume();
 			return term;
 		}
 
@@ -222,7 +235,7 @@ public:
 			return stat;
 		}
 		else if (peek().has_value() && peek().value().type == TokenType::variable && peek(1).has_value() && peek(1).value().type == TokenType::eq 
-			&& peek(2).has_value() && (peek(2).value().type == TokenType::int_val || peek(2).value().type == TokenType::variable))
+			&& peek(2).has_value() && (peek(2).value().type == TokenType::int_val || peek(2).value().type == TokenType::variable || peek(2).value().type == TokenType::open_char))
 		{
 			NodeStat* stat = m_allocator.emplace<NodeStat>();
 			NodeStateEq* stat_eq = m_allocator.emplace<NodeStateEq>();
@@ -232,6 +245,19 @@ public:
 			consume();
 
 			stat->stat = stat_eq;
+			return stat;
+		}
+		else if (peek().has_value() && peek().value().type == TokenType::character && peek(1).has_value() && peek(1).value().type == TokenType::variable &&
+			peek(2).has_value() && peek(2).value().type == TokenType::eq)
+		{
+			consume();
+			NodeStat* stat = m_allocator.emplace<NodeStat>();
+			NodeStatVar* stat_var = m_allocator.emplace<NodeStatVar>();
+			stat_var->name = consume().value.value();
+			consume();
+			stat_var->expr = parse_expr().value();
+			stat->stat = stat_var;
+			consume();
 			return stat;
 		}
 
