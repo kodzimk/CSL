@@ -20,7 +20,8 @@ enum TokenType
 	 character,
 	 open_char,
 	 close_char,
-	 char_val
+	 char_val,
+	 print,
 };
 
 inline std::string to_string(const TokenType type)
@@ -37,9 +38,9 @@ inline std::string to_string(const TokenType type)
 	case TokenType::close_paren:
 		return "`)`";
 	case TokenType::integer:
-		return "identifier";
+		return "int";
 	case TokenType::variable:
-		return "`let`";
+		return "`variable`";
 	case TokenType::eq:
 		return "`=`";
 	case TokenType::plus:
@@ -50,6 +51,10 @@ inline std::string to_string(const TokenType type)
 		return "`-`";
 	case TokenType::fslash:
 		return "`/`";
+	case TokenType::character:
+			return "character";
+	case TokenType::open_char:
+		return "character";
 	}
 	assert(false);
 }
@@ -116,6 +121,11 @@ public:
 				else if (str == "char")
 				{
 					tokens.push_back({ .type = TokenType::character });
+					str.clear();
+				}
+				else if (str == "printf")
+				{
+					tokens.push_back({ .type = TokenType::print });
 					str.clear();
 				}
 				else

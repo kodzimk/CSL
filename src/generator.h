@@ -12,6 +12,7 @@
 
 #include"parser.h"
 
+
 class Generator
 {
 public:
@@ -19,6 +20,35 @@ public:
 		: prog(prog)
 	{
 
+	}
+
+	void gen_word(NodeWord* word)
+	{
+		struct WordVisitor {
+			Generator& gen;
+
+			void operator()(const NodeWordCharVal* char_val)
+			{
+				if (!gen.m_vars.contains(char_val->name))
+				{
+					std::vector<std::string> s = { "'",char_val->value.value(),"'" };
+					gen.m_data << char_val->name << " db " << s[0] << s[1] << s[2] << "\n";
+					gen.m_vars[char_val->name] = gen.m_stack_size;
+				}
+				else
+				{
+					std::vector<std::string> s = { "'",char_val->value.value(),"'" };
+					gen.m_output << "    mov [" << char_val->name << "], " << "dword " << s[0] << s[1] << s[2] << "\n";
+				}
+			}
+			void operator()()
+			{
+
+			}
+		};
+
+		WordVisitor visitor = { .gen = *this };
+		std::visit(visitor, word->var);
 	}
 
 	void gen_term(NodeTerm* term)
@@ -41,37 +71,14 @@ public:
 				}
 				else
 				{
-					if (term_var->value.has_value())
-					{
-						std::vector<std::string> val = {"'", term_var->value.value(),"'"};
-						std::string val1;
-						for (auto s : val)
-						{
-							val1 += s;
-						}
-
-						std::cout << val1 << std::endl;
-						gen.m_output << "   mov rax," << val1 << '\n';
-						gen.m_output << "   push rax\n";
-						gen.m_stack_size++;
-					}
+						gen.m_output << "   mov rax, " <<  term_var->value.value() << '\n';
+						gen.push("rax");
+					
 				}
 			}
 			void operator()( NodeTermParen* term_paren)
 			{
 				gen.gen_expr(term_paren->expr);
-			}
-			void operator()(NodeTermCharVal* char_val)
-			{
-				std::vector<std::string> val = { "'", char_val->value.value(),"'" };
-				std::string val1;
-				for (auto s : val)
-				{
-					val1 += s;
-				}
-
-				gen.m_output << "   mov rax," << val1 << '\n';
-				gen.push("rax");
 			}
 		};
 		TermVisitor visitor = { .gen = *this };
@@ -140,6 +147,10 @@ public:
 			{
 				gen.gen_bin_expr(bin_expr);
 			}
+			void operator()(NodeWord* bin_expr)
+			{
+				gen.gen_word(bin_expr);
+			}
 		};
 		ExprVisitor visitor = { .gen = *this };
 		std::visit(visitor, expr->var);
@@ -157,11 +168,21 @@ public:
 				gen.pop("rdi");
 				gen.m_output << "    syscall\n";
 			}
+			void operator()(const NodeStatPrint* stat_print)
+			{
+				gen.m_output << "    mov edx," << 1 << "\n";
+				gen.m_output << "    mov ecx," << stat_print->variableName << "\n";
+				gen.m_output << "    mov ebx," << 1 << "\n";
+				gen.m_output << "    mov eax," << 4 << "\n";
+				gen.m_output << "    int 0x80\n";
+			}
 			void operator()(const NodeStatVar* stat_var)
 			{
 				if (gen.m_vars.find(stat_var->name) == gen.m_vars.end())
 				{
+					if(stat_var->type != "char")
 					gen.m_vars[stat_var->name] = gen.m_stack_size;
+
 					gen.gen_expr(stat_var->expr);
 				}
 				else
@@ -190,6 +211,9 @@ public:
 
 	std::string gen_prog()
 	{
+		m_data << "section .data\n";
+
+		m_output << "section .text\n";
 		m_output << "global _start\n";
 		m_output << "_start:\n";
 		
@@ -199,7 +223,11 @@ public:
 			gen_stat(prog.stats[i]);
 		}
 
-		std::string output = m_output.str();
+		
+		std::string output = m_data.str();
+		output += '\n';
+		output += m_output.str();
+
 		return output;
 	}
 
@@ -223,5 +251,6 @@ private:
 	size_t m_stack_size = 0;
 	NodeProg prog;
 	std::stringstream m_output;
-	std::unordered_map<std::string, size_t> m_vars;
+	std::stringstream m_data;
+	std::unordered_map<std::string,size_t> m_vars;
 };
