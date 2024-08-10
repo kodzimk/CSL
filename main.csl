@@ -2,7 +2,7 @@ int main()
 {
   char symbol = 's';
   char s = 'b';
-  s = symbol;
+  symbol = s;
 
   printf(symbol);
   int a = 1;

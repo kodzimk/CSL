@@ -41,11 +41,21 @@ public:
 					offset << "QWORD [rsp + " << (gen.m_stack_size - var - 1) * 8 << "]\n";
 					gen.push(offset.str());
 				}
-				else if(gen.m_char_vars.contains(term_var->eqName) && gen.m_char_vars.contains(term_var->name))
+				else if(!gen.m_char_vars.contains(term_var->eqName) && gen.m_char_vars.contains(term_var->name))
+				{
+					std::vector<std::string> s = { "'","s","'"};
+					gen.m_data << term_var->eqName << " db " << s[0] << s[1] << s[2] << "\n";
+					gen.m_char_vars[term_var->eqName] = 0;
+
+					gen.m_output << "    mov rax," << "[" << term_var->name << "]" << '\n';
+					gen.m_output << "    mov [" << term_var->eqName << "]," << "rax" << "\n";
+					gen.m_output << "    mov [" << term_var->name << "]," << "rax" << "\n";
+				}
+				else if (gen.m_char_vars.contains(term_var->eqName) && gen.m_char_vars.contains(term_var->name))
 				{
 					gen.m_output << "    mov rax," << "[" << term_var->name << "]" << '\n';
-
 					gen.m_output << "    mov [" << term_var->eqName << "]," << "rax" << "\n";
+					gen.m_output << "    mov [" << term_var->name << "]," << "rax" << "\n";
 				}
 				else
 				{
@@ -159,7 +169,7 @@ public:
 			void operator()(const NodeStatPrint* stat_print)
 			{
 				gen.m_output << "    mov edx," << 1 << "\n";
-				gen.m_output << "    mov ecx," << stat_print->variableName << "\n";
+				gen.m_output << "    mov ecx," << stat_print->variableName <<  "\n";
 				gen.m_output << "    mov ebx," << 1 << "\n";
 				gen.m_output << "    mov eax," << 4 << "\n";
 				gen.m_output << "    int 0x80\n";

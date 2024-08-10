@@ -5,7 +5,8 @@ s db 'b'
 section .text
 global _start
 _start:
-    mov rax,[symbol]
+    mov rax,[s]
+    mov [symbol],rax
     mov [s],rax
     mov edx,1
     mov ecx,symbol

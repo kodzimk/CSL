@@ -282,11 +282,21 @@ public:
 			NodeStatVar* stat_var = m_allocator.emplace<NodeStatVar>();
 			stat_var->type = "char";
 			stat_var->name = consume().value.value();
+			std::string type = to_string(peek(1).value().type);
 			consume();
 			stat_var->expr = parse_expr().value();
-			NodeTerm* word = std::get<NodeTerm*>(stat_var->expr->var);
-			NodeWordCharVal* val = std::get< NodeWordCharVal*>(word->var);
-			val->name = stat_var->name;
+			if (type == "character")
+			{
+				NodeTerm* word = std::get<NodeTerm*>(stat_var->expr->var);
+				NodeWordCharVal* val = std::get<NodeWordCharVal*>(word->var);
+				val->name = stat_var->name;
+			}
+			if (type == "variable")
+			{
+				NodeTerm* word = std::get<NodeTerm*>(stat_var->expr->var);
+				NodeTermVar* val = std::get<NodeTermVar*>(word->var);
+				val->eqName = stat_var->name;
+			}
 			stat->stat = stat_var;
 			consume();
 			return stat;
