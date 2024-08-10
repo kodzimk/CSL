@@ -240,17 +240,34 @@ public:
 			NodeStat* stat = m_allocator.emplace<NodeStat>();
 			NodeStatVar* stat_var = m_allocator.emplace<NodeStatVar>();
 			stat_var->type = "int";
+			std::string type = to_string(peek(2).value().type);
+
+			if (type == "character" || (type == "variable" && m_vars.contains(peek(2).value().value.value())&& m_vars.at(peek(2).value().value.value()) != "integer"))
+			{
+				std::cerr << "Invalid value!!" << std::endl;
+				exit(EXIT_FAILURE);
+			}
+
 			stat_var->name = consume().value.value();
 			consume();
 			stat_var->expr = parse_expr().value();
 			consume();
 			
+			m_vars[stat_var->name] = "integer";
 			stat->stat = stat_var;
 			return stat;
 		}
 		else if (peek().has_value() && peek().value().type == TokenType::variable && peek(1).has_value() && peek(1).value().type == TokenType::eq 
 			&& peek(2).has_value() && (peek(2).value().type == TokenType::int_val || peek(2).value().type == TokenType::variable || peek(2).value().type == TokenType::open_char))
 		{
+			if 	((peek(2).value().value.has_value() && m_vars.contains(peek(2).value().value.value()) &&
+				m_vars.contains(peek().value().value.value()) && m_vars.at(peek().value().value.value()) != m_vars.at(peek(2).value().value.value())) ||
+				(to_string(peek(2).value().type) != "variable" && m_vars.at(peek().value().value.value()) != to_string(peek(2).value().type)))
+			{
+				std::cerr << "Invalid value!!" << std::endl;
+				exit(EXIT_FAILURE);
+			}
+
 			NodeStat* stat = m_allocator.emplace<NodeStat>();
 			NodeStateEq* stat_eq = m_allocator.emplace<NodeStateEq>();
 			stat_eq->type = to_string(peek(2).value().type);
@@ -280,24 +297,38 @@ public:
 			consume();
 			NodeStat* stat = m_allocator.emplace<NodeStat>();
 			NodeStatVar* stat_var = m_allocator.emplace<NodeStatVar>();
-			stat_var->type = "char";
+			stat_var->type = "character";
 			stat_var->name = consume().value.value();
+
 			std::string type = to_string(peek(1).value().type);
 			consume();
 			stat_var->expr = parse_expr().value();
-			if (type == "character")
+
+			if (type == "integer")
+			{
+				std::cerr << "Invalid value!!" << std::endl;
+				exit(EXIT_FAILURE);
+			}
+			else if (type == "character")
 			{
 				NodeTerm* word = std::get<NodeTerm*>(stat_var->expr->var);
 				NodeWordCharVal* val = std::get<NodeWordCharVal*>(word->var);
 				val->name = stat_var->name;
 			}
-			if (type == "variable")
+			else if (type == "variable")
 			{
 				NodeTerm* word = std::get<NodeTerm*>(stat_var->expr->var);
 				NodeTermVar* val = std::get<NodeTermVar*>(word->var);
 				val->eqName = stat_var->name;
+				if (m_vars.at(val->name) != "character")
+				{
+					std::cerr << "Invalid value!!" << std::endl;
+					exit(EXIT_FAILURE);
+				}
 			}
 			stat->stat = stat_var;
+
+			m_vars[stat_var->name] = "character";
 			consume();
 			return stat;
 		}
@@ -371,5 +402,6 @@ private:
 
 	size_t m_index = 0;
 	std::vector<Token> m_tokens;
+	std::unordered_map<std::string, std::string> m_vars;
 	ArenaAllocator m_allocator;
 };

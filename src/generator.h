@@ -178,7 +178,7 @@ public:
 			{
 				if (gen.m_int_vars.find(stat_var->name) == gen.m_int_vars.end() && gen.m_char_vars.find(stat_var->name) == gen.m_char_vars.end())
 				{
-					if(stat_var->type != "char")
+					if(stat_var->type != "character")
 					   gen.m_int_vars[stat_var->name] = gen.m_stack_size;
 
 					gen.gen_expr(stat_var->expr);

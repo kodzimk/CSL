@@ -1,20 +1,21 @@
 section .data
 symbol db 's'
-s db 'b'
+s db 's'
 
 section .text
 global _start
 _start:
-    mov rax,[s]
-    mov [symbol],rax
+    mov rax,[symbol]
     mov [s],rax
+    mov [symbol],rax
+   mov rax,1
+   push rax
+    mov [symbol], dword 'a'
     mov edx,1
-    mov ecx,symbol
+    mov ecx,s
     mov ebx,1
     mov eax,4
     int 0x80
-   mov rax,1
-   push rax
    push QWORD [rsp + 0]
 
     mov rax,60

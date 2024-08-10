@@ -30,7 +30,7 @@ inline std::string to_string(const TokenType type)
 	case TokenType::ret:
 		return "`exit`";
 	case TokenType::int_val:
-		return "int literal";
+		return "integer";
 	case TokenType::semi:
 		return "`;`";
 	case TokenType::open_paren:
@@ -38,7 +38,7 @@ inline std::string to_string(const TokenType type)
 	case TokenType::close_paren:
 		return "`)`";
 	case TokenType::integer:
-		return "int";
+		return "integer";
 	case TokenType::variable:
 		return "variable";
 	case TokenType::eq:
