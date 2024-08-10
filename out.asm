@@ -3,19 +3,29 @@ section .bss
 stringBufferPos resb 8
 
 section .data
-symbol db 's'
-s db ' '
+newLineMsg db 0xA, 0xD
+newLineLen equ $ - newLineMsg
+temp db 'a',0xA,0xD
+symbol db 's',0xA,0xD
+s db ' ',0xA,0xD
 
 section .text
 global _start
 _start:
    mov rax,10
    push rax
+   push QWORD [rsp + 0]
+
+    pop rax
+    call _printnumberRAX
+   mov rax,1
+   push rax
+    pop rax
+    call _printnumberRAX
    mov rax,100
    push rax
     pop rax
     call _printnumberRAX
-    call euklid
    push QWORD [rsp + 0]
 
     mov rax,60
@@ -53,21 +63,4 @@ dec rcx
 mov[stringBufferPos], rcx
 cmp rcx, stringBuffer
 jge _printnumberRAXLoop2
-ret
-euklid :
-cmp bx, cx
-je finish
-jg again
-xchg bx, cx
-again :
-mov ax, bx
-mov bx, cx
-xor dx, dx
-div cx
-cmp dx, 0
-je finish
-mov bx, cx
-mov cx, dx
-jmp again
-finish :
 ret

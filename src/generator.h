@@ -16,8 +16,9 @@
 class Generator
 {
 public:
-	Generator(NodeProg prog)
-		: prog(prog)
+	Generator(NodeProg prog,std::unordered_map<std::string,std::string> m_types)
+		: prog(prog),
+		m_types(m_types)
 	{
 
 	}
@@ -73,7 +74,7 @@ public:
 				if (!gen.m_char_vars.contains(char_val->name))
 				{
 					std::vector<std::string> s = { "'",char_val->value.value(),"'" };
-					gen.m_data << char_val->name << " db " << s[0] << s[1] << s[2] << "\n";
+					gen.m_data << char_val->name << " db " << s[0] << s[1] << s[2] << "," << "0xA" << "," << "0xD" << "\n";
 					gen.m_char_vars[char_val->name] = 0;
 				}
 				else
@@ -168,21 +169,48 @@ public:
 			}
 			void operator()(const NodeStatPrint* stat_print)
 			{
-				if (!gen.m_char_vars.contains(stat_print->variableName))
+				if (stat_print->variableName.has_value() && gen.m_types.contains(stat_print->variableName.value()) && gen.m_types.at(stat_print->variableName.value()) == "character")
+				{
+					gen.m_output << "    mov edx,1" << "\n";
+					gen.m_output << "    mov ecx," << stat_print->variableName.value() << "\n";
+					gen.m_output << "    mov ebx,1" << "\n";
+					gen.m_output << "    mov eax,4" << "\n";
+					gen.m_output << "    int 0x80\n";
+					gen.m_output << "    \n";
+
+					gen.m_output << "    mov edx,newLineLen" << "\n";
+					gen.m_output << "    mov ecx,newLineMsg" << "\n";
+					gen.m_output << "    mov ebx,1" << "\n";
+					gen.m_output << "    mov eax,4" << "\n";
+					gen.m_output << "    int 0x80\n";
+					gen.m_output << "    \n";
+				}
+				else if (stat_print->type == "character")
+				{
+					NodeTerm* term = std::get<NodeTerm*>(stat_print->expr->var);
+						NodeWordCharVal* val = std::get<NodeWordCharVal*>(term->var);
+
+						gen.m_output << "    mov [temp],"<<"dword '"<< val->value.value() <<"'" <<"\n";
+						gen.m_output << "    mov ecx,temp" << "\n";
+						gen.m_output << "    mov edx,1" << "\n";
+						gen.m_output << "    mov ebx,1" << "\n";
+						gen.m_output << "    mov eax,4" << "\n";
+						gen.m_output << "    int 0x80\n";
+						gen.m_output << "    \n";
+
+						gen.m_output << "    mov edx,newLineLen" << "\n";
+						gen.m_output << "    mov ecx,newLineMsg" << "\n";
+						gen.m_output << "    mov ebx,1" << "\n";
+						gen.m_output << "    mov eax,4" << "\n";
+						gen.m_output << "    int 0x80\n";
+						gen.m_output << "    \n";
+				}
+				else if (stat_print->type == "integer" || (stat_print->variableName.has_value() && gen.m_types.contains(stat_print->variableName.value()) && gen.m_types.at(stat_print->variableName.value()) == "integer"))
 				{
 					gen.gen_expr(stat_print->expr);
 					gen.pop("rax");
 					gen.m_output << "    call _printnumberRAX\n";
-					gen.m_output << "    call euklid\n";
-				}
-				else
-				{
-					gen.m_output << "    mov eax," << 1 << "\n";
-					gen.m_output << "    mov ecx," << stat_print->variableName << "\n";
-					gen.m_output << "    mov ebx," << 1 << "\n";
-					gen.m_output << "    mov eax," << 4 << "\n";
-					gen.m_output << "    int 0x80\n";
-				}
+				}		
 			}
 			void operator()(const NodeStatVar* stat_var)
 			{
@@ -223,6 +251,10 @@ public:
 	{
 		m_bss << "section .bss\n stringBuffer resb 100\nstringBufferPos resb 8\n";
 		m_data << "section .data\n";
+		m_data << "newLineMsg db 0xA, 0xD\n";
+		m_data << "newLineLen equ $ - newLineMsg\n";\
+		m_data << "temp db 'a',0xA,0xD\n";
+
 		m_functions << "_printnumberRAX:\n";
 		m_functions << "mov rcx, stringBuffer\n";
 		m_functions << "mov rbx, 10\n";
@@ -256,7 +288,8 @@ public:
 				m_functions << "cmp rcx, stringBuffer\n";
 				m_functions << "jge _printnumberRAXLoop2\n";
 				m_functions << "ret\n";
-				m_functions << "euklid :\n";
+
+				/*m_functions << "euklid :\n";
 				m_functions << "cmp bx, cx\n";
 				m_functions << "je finish\n";
 				m_functions << "jg again\n";
@@ -274,7 +307,7 @@ public:
 				m_functions << "jmp again\n";
 
 				m_functions << "finish :\n";
-				m_functions << "ret\n";
+				m_functions << "ret\n";*/
 
 		m_output << "section .text\n";
 		m_output << "global _start\n";
@@ -322,4 +355,5 @@ private:
 	std::stringstream m_functions;
 	std::unordered_map<std::string,size_t> m_int_vars;
 	std::unordered_map<std::string, int> m_char_vars;
+	std::unordered_map<std::string, std::string> m_types;
 };

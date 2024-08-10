@@ -81,8 +81,9 @@ struct NodeStateEq
 
 struct NodeStatPrint
 {
-	std::string variableName;
+	std::optional<std::string> variableName;
 	NodeExpr* expr;
+	std::string type;
 };
 
 
@@ -333,13 +334,16 @@ public:
 			return stat;
 		}
 		else if (peek().has_value() && peek().value().type == TokenType::print && peek(1).has_value() && peek(1).value().type == TokenType::open_paren &&
-			peek(2).has_value() && (peek(2).value().type == TokenType::variable || peek(2).value().type == TokenType::int_val))
+			peek(2).has_value() && (peek(2).value().type == TokenType::variable || peek(2).value().type == TokenType::int_val || peek(2).value().type == TokenType::open_char))
 		{
 			consume();
 			consume();
 			NodeStat* stat = m_allocator.emplace<NodeStat>();
 			NodeStatPrint* stat_print = m_allocator.emplace<NodeStatPrint>();
-			stat_print->variableName = peek().value().value.value();
+			stat_print->type = to_string(peek().value().type);
+			if(peek().value().value.has_value())
+			   stat_print->variableName = peek().value().value.value();
+
 			stat_print->expr = parse_expr().value();
 			stat->stat = stat_print;
 			consume();
@@ -402,6 +406,7 @@ private:
 
 	size_t m_index = 0;
 	std::vector<Token> m_tokens;
-	std::unordered_map<std::string, std::string> m_vars;
 	ArenaAllocator m_allocator;
+public:
+	std::unordered_map<std::string, std::string> m_vars;
 };
