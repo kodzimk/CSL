@@ -168,11 +168,21 @@ public:
 			}
 			void operator()(const NodeStatPrint* stat_print)
 			{
-				gen.m_output << "    mov edx," << 1 << "\n";
-				gen.m_output << "    mov ecx," << stat_print->variableName <<  "\n";
-				gen.m_output << "    mov ebx," << 1 << "\n";
-				gen.m_output << "    mov eax," << 4 << "\n";
-				gen.m_output << "    int 0x80\n";
+				if (!gen.m_char_vars.contains(stat_print->variableName))
+				{
+					gen.gen_expr(stat_print->expr);
+					gen.pop("rax");
+					gen.m_output << "    call _printnumberRAX\n";
+					gen.m_output << "    call euklid\n";
+				}
+				else
+				{
+					gen.m_output << "    mov eax," << 1 << "\n";
+					gen.m_output << "    mov ecx," << stat_print->variableName << "\n";
+					gen.m_output << "    mov ebx," << 1 << "\n";
+					gen.m_output << "    mov eax," << 4 << "\n";
+					gen.m_output << "    int 0x80\n";
+				}
 			}
 			void operator()(const NodeStatVar* stat_var)
 			{
@@ -211,7 +221,60 @@ public:
 
 	std::string gen_prog()
 	{
+		m_bss << "section .bss\n stringBuffer resb 100\nstringBufferPos resb 8\n";
 		m_data << "section .data\n";
+		m_functions << "_printnumberRAX:\n";
+		m_functions << "mov rcx, stringBuffer\n";
+		m_functions << "mov rbx, 10\n";
+		m_functions << "mov[rcx], rbx\n";
+		m_functions << "inc rcx\n";
+		m_functions << "mov[stringBufferPos], rcx\n";
+		m_functions << "_printnumberRAXLoop :\n";
+		m_functions << "mov rdx, 0\n";
+		m_functions << "mov rbx, 10\n";
+		m_functions << "div rbx\n";
+		m_functions << "push rax\n";
+		m_functions << "add rdx, 48\n";
+		m_functions << "mov rcx, [stringBufferPos]\n";
+		m_functions << "mov[rcx], dl\n";
+		m_functions << "inc rcx\n";
+		m_functions << "mov[stringBufferPos], rcx\n";
+		m_functions << "pop rax;\n";
+			m_functions << "cmp rax, 0\n";
+			m_functions << "jne _printnumberRAXLoop\n";
+			m_functions << "_printnumberRAXLoop2 :\n";
+			m_functions << "mov rcx, [stringBufferPos]\n";
+			m_functions << "mov rax, 1\n";
+			m_functions << "mov rdi, 1\n";
+				m_functions << "mov rsi, rcx\n";
+				m_functions << "mov rdx, 1\n";
+				m_functions << "syscall\n";
+
+				m_functions << "mov rcx, [stringBufferPos]\n";
+				m_functions << "dec rcx\n";
+				m_functions << "mov[stringBufferPos], rcx\n";
+				m_functions << "cmp rcx, stringBuffer\n";
+				m_functions << "jge _printnumberRAXLoop2\n";
+				m_functions << "ret\n";
+				m_functions << "euklid :\n";
+				m_functions << "cmp bx, cx\n";
+				m_functions << "je finish\n";
+				m_functions << "jg again\n";
+				m_functions << "xchg bx, cx\n";
+				m_functions << "again :\n";
+				m_functions << "mov ax, bx\n";
+				m_functions << "mov bx, cx\n";
+				m_functions << "xor dx, dx\n";
+				m_functions << "div cx\n";
+				m_functions << "cmp dx, 0\n";
+				m_functions << "je finish\n";
+				m_functions << "mov bx, cx\n";
+				m_functions << "mov cx, dx\n";
+
+				m_functions << "jmp again\n";
+
+				m_functions << "finish :\n";
+				m_functions << "ret\n";
 
 		m_output << "section .text\n";
 		m_output << "global _start\n";
@@ -224,10 +287,13 @@ public:
 		}
 
 		
-		std::string output = m_data.str();
+		std::string output = m_bss.str();
+		output += '\n';
+		output += m_data.str();
 		output += '\n';
 		output += m_output.str();
-
+		output += '\n';
+		output += m_functions.str();
 		return output;
 	}
 
@@ -252,6 +318,8 @@ private:
 	NodeProg prog;
 	std::stringstream m_output;
 	std::stringstream m_data;
+	std::stringstream m_bss;
+	std::stringstream m_functions;
 	std::unordered_map<std::string,size_t> m_int_vars;
 	std::unordered_map<std::string, int> m_char_vars;
 };

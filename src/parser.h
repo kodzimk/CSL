@@ -165,7 +165,7 @@ public:
 
 	std::optional<NodeExpr*> parse_expr(const int min_prec = 0)
 	{
-
+		
 		std::optional<NodeTerm*> term_lhs = parse_term();
 		if (!term_lhs.has_value()) {
 			return {};
@@ -333,7 +333,7 @@ public:
 			return stat;
 		}
 		else if (peek().has_value() && peek().value().type == TokenType::print && peek(1).has_value() && peek(1).value().type == TokenType::open_paren &&
-			peek(2).has_value() && (peek(2).value().type == TokenType::variable))
+			peek(2).has_value() && (peek(2).value().type == TokenType::variable || peek(2).value().type == TokenType::int_val))
 		{
 			consume();
 			consume();

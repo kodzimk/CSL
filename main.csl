@@ -1,11 +1,10 @@
 int main()
 {
   char symbol = 's';
-  char s = symbol;
-  int a = 1;
-  symbol = 'a';
+  char s = ' ';
+  int a = 10;
 
-  printf(s);
+  printf(100);
 
 
   return a;
