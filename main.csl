@@ -1,7 +1,9 @@
 int main()
 {
   char symbol = 's';
-  symbol = 'a';
+  char s = 'b';
+  s = symbol;
+
   printf(symbol);
   int a = 1;
 

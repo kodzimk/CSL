@@ -1,16 +1,17 @@
 section .data
 symbol db 's'
+s db 'b'
 
 section .text
 global _start
 _start:
     mov rax,[symbol]
-    mov [symbol], dword '5'
-    jmp printf
-
-    mov [symbol],rax
-   jmp printf
-
+    mov [s],rax
+    mov edx,1
+    mov ecx,symbol
+    mov ebx,1
+    mov eax,4
+    int 0x80
    mov rax,1
    push rax
    push QWORD [rsp + 0]
@@ -18,10 +19,3 @@ _start:
     mov rax,60
     pop rdi
     syscall
-
-printf:
-    mov edx,1
-    mov ecx,symbol
-    mov ebx,1
-    mov eax,4
-    int 0x80

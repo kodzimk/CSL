@@ -22,34 +22,6 @@ public:
 
 	}
 
-	void gen_word(NodeWord* word)
-	{
-		struct WordVisitor {
-			Generator& gen;
-
-			void operator()(const NodeWordCharVal* char_val)
-			{
-				if (!gen.m_vars.contains(char_val->name))
-				{
-					std::vector<std::string> s = { "'",char_val->value.value(),"'" };
-					gen.m_data << char_val->name << " db " << s[0] << s[1] << s[2] << "\n";
-					gen.m_vars[char_val->name] = gen.m_stack_size;
-				}
-				else
-				{
-					std::vector<std::string> s = { "'",char_val->value.value(),"'" };
-					gen.m_output << "    mov [" << char_val->name << "], " << "dword " << s[0] << s[1] << s[2] << "\n";
-				}
-			}
-			void operator()()
-			{
-
-			}
-		};
-
-		WordVisitor visitor = { .gen = *this };
-		std::visit(visitor, word->var);
-	}
 
 	void gen_term(NodeTerm* term)
 	{
@@ -62,12 +34,18 @@ public:
 			}
 			void operator()(const NodeTermVar* term_var)
 			{
-				if (gen.m_vars.contains(term_var->name))
+				if (gen.m_int_vars.contains(term_var->name))
 				{
-					const auto& var = gen.m_vars.at(term_var->name);
+					const auto& var = gen.m_int_vars.at(term_var->name);
 					std::stringstream offset;
 					offset << "QWORD [rsp + " << (gen.m_stack_size - var - 1) * 8 << "]\n";
 					gen.push(offset.str());
+				}
+				else if(gen.m_char_vars.contains(term_var->eqName) && gen.m_char_vars.contains(term_var->name))
+				{
+					gen.m_output << "    mov rax," << "[" << term_var->name << "]" << '\n';
+
+					gen.m_output << "    mov [" << term_var->eqName << "]," << "rax" << "\n";
 				}
 				else
 				{
@@ -76,9 +54,23 @@ public:
 					
 				}
 			}
-			void operator()( NodeTermParen* term_paren)
+			void operator()(NodeTermParen* term_paren)
 			{
 				gen.gen_expr(term_paren->expr);
+			}
+			void operator()(const NodeWordCharVal* char_val)
+			{
+				if (!gen.m_char_vars.contains(char_val->name))
+				{
+					std::vector<std::string> s = { "'",char_val->value.value(),"'" };
+					gen.m_data << char_val->name << " db " << s[0] << s[1] << s[2] << "\n";
+					gen.m_char_vars[char_val->name] = 0;
+				}
+				else
+				{
+					std::vector<std::string> s = { "'",char_val->value.value(),"'" };
+					gen.m_output << "    mov [" << char_val->name << "], " << "dword " << s[0] << s[1] << s[2] << "\n";
+				}
 			}
 		};
 		TermVisitor visitor = { .gen = *this };
@@ -147,10 +139,6 @@ public:
 			{
 				gen.gen_bin_expr(bin_expr);
 			}
-			void operator()(NodeWord* bin_expr)
-			{
-				gen.gen_word(bin_expr);
-			}
 		};
 		ExprVisitor visitor = { .gen = *this };
 		std::visit(visitor, expr->var);
@@ -178,10 +166,10 @@ public:
 			}
 			void operator()(const NodeStatVar* stat_var)
 			{
-				if (gen.m_vars.find(stat_var->name) == gen.m_vars.end())
+				if (gen.m_int_vars.find(stat_var->name) == gen.m_int_vars.end() && gen.m_char_vars.find(stat_var->name) == gen.m_char_vars.end())
 				{
 					if(stat_var->type != "char")
-					gen.m_vars[stat_var->name] = gen.m_stack_size;
+					   gen.m_int_vars[stat_var->name] = gen.m_stack_size;
 
 					gen.gen_expr(stat_var->expr);
 				}
@@ -193,10 +181,12 @@ public:
 			}
 			void operator()(const NodeStateEq* stat_eq)
 			{
-				if (gen.m_vars.contains(stat_eq->variableName))
+				if (gen.m_int_vars.contains(stat_eq->variableName) || gen.m_char_vars.contains(stat_eq->variableName))
 				{
 					gen.gen_expr(stat_eq->expr);
-					gen.m_vars.at(stat_eq->variableName) = gen.m_stack_size - 1;        
+
+					if(gen.m_int_vars.contains(stat_eq->variableName))
+					gen.m_int_vars.at(stat_eq->variableName) = gen.m_stack_size - 1;
 				}
 				else
 				{
@@ -252,5 +242,6 @@ private:
 	NodeProg prog;
 	std::stringstream m_output;
 	std::stringstream m_data;
-	std::unordered_map<std::string,size_t> m_vars;
+	std::unordered_map<std::string,size_t> m_int_vars;
+	std::unordered_map<std::string, int> m_char_vars;
 };

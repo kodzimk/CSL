@@ -9,6 +9,7 @@ struct NodeTermVar
 {
 	std::optional<std::string> value;
 	std::string name;
+	std::string eqName;
 };
 
 struct NodeTermIntVal
@@ -52,16 +53,12 @@ struct NodeBinExpr {
 };
 
 struct NodeTerm {
-	std::variant<NodeTermIntVal*, NodeTermVar*,NodeTermParen*> var;
+	std::variant<NodeTermIntVal*, NodeTermVar*,NodeTermParen*,NodeWordCharVal*> var;
 };
 
-struct NodeWord
-{
-	std::variant<NodeWordCharVal*> var;
-};
 
 struct NodeExpr {
-	std::variant<NodeTerm*, NodeBinExpr*,NodeWord*> var;
+	std::variant<NodeTerm*, NodeBinExpr*> var;
 };
 
 struct NodeStmtExit {
@@ -115,20 +112,6 @@ public:
 
 	}
 
-	std::optional<NodeWord*> parse_word()
-	{
-				 if (auto int_lit = try_consume(TokenType::open_char))
-				{
-					NodeWordCharVal* char_val = m_allocator.emplace<NodeWordCharVal>();
-					char_val->value = consume().value;
-					NodeWord* word = m_allocator.emplace<NodeWord>();
-					word->var = char_val;
-					consume();
-					return word;
-				}
-
-				 return {};
-	}
 
 	std::optional<NodeTerm*> parse_term()
 	{
@@ -161,6 +144,15 @@ public:
 			term->var = term_paren;
 			return term;
 		}
+		if (auto int_lit = try_consume(TokenType::open_char))
+		{
+			NodeWordCharVal* char_val = m_allocator.emplace<NodeWordCharVal>();
+			char_val->value = consume().value;
+			NodeTerm* word = m_allocator.emplace<NodeTerm>();
+			word->var = char_val;
+			consume();
+			return word;
+		}
 
 		return {};
 	}
@@ -173,11 +165,6 @@ public:
 
 	std::optional<NodeExpr*> parse_expr(const int min_prec = 0)
 	{
-		std::optional<NodeWord*> word = parse_word();
-		if (word.has_value()) {
-			auto expr = m_allocator.emplace<NodeExpr>(word.value());
-			return expr;
-		}
 
 		std::optional<NodeTerm*> term_lhs = parse_term();
 		if (!term_lhs.has_value()) {
@@ -273,10 +260,17 @@ public:
 			consume();
 			if (stat_eq->type == "character")
 			{
-				NodeWord* word = std::get< NodeWord*>(stat_eq->expr->var);
-				NodeWordCharVal* val = std::get< NodeWordCharVal*>(word->var);
+				NodeTerm* word = std::get<NodeTerm*>(stat_eq->expr->var);
+				NodeWordCharVal* val = std::get<NodeWordCharVal*>(word->var);
 				val->name = stat_eq->variableName;
+			} 
+			if (stat_eq->type == "variable")
+			{
+				NodeTerm* word = std::get<NodeTerm*>(stat_eq->expr->var);
+				NodeTermVar* val = std::get<NodeTermVar*>(word->var);
+				val->eqName = stat_eq->variableName;
 			}
+
 			stat->stat = stat_eq;
 			return stat;
 		}
@@ -290,7 +284,7 @@ public:
 			stat_var->name = consume().value.value();
 			consume();
 			stat_var->expr = parse_expr().value();
-			NodeWord* word = std::get< NodeWord*>(stat_var->expr->var);
+			NodeTerm* word = std::get<NodeTerm*>(stat_var->expr->var);
 			NodeWordCharVal* val = std::get< NodeWordCharVal*>(word->var);
 			val->name = stat_var->name;
 			stat->stat = stat_var;

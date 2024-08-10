@@ -40,7 +40,7 @@ inline std::string to_string(const TokenType type)
 	case TokenType::integer:
 		return "int";
 	case TokenType::variable:
-		return "`variable`";
+		return "variable";
 	case TokenType::eq:
 		return "`=`";
 	case TokenType::plus:
@@ -110,7 +110,7 @@ public:
 				}
 				else if (str == "int")
 				{
-					tokens.push_back({ .type = TokenType::integer });
+					tokens.push_back({ .type = TokenType::integer});
 					str.clear();
 				}
 				else if (str == "main")
