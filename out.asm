@@ -12,21 +12,21 @@ s db ' ',0xA,0xD
 section .text
 global _start
 _start:
-   mov rax,10
+   mov rax,1
    push rax
     ;; if
-   mov rax,0
+   mov rax,1
    push rax
     pop rax
     test rax, rax
     jz label0
-   mov rax,1
+   mov rax,6
    push rax
     add rsp, 0
     jmp label1
 label0:
-   mov rax,0
-   push rax
+   push QWORD [rsp + 0]
+
     pop rax
     test rax, rax
     jz label2

@@ -25,7 +25,9 @@ enum TokenType
 	 newLine,
 	 ifscope,
 	 elseifscope,
-	 elsescope
+	 elsescope,
+	 greater,
+	 lesser,
 };
 
 inline std::string to_string(const TokenType type)
@@ -155,6 +157,18 @@ public:
 			}
 			else if (peek().value()[0] == ' ')
 			{
+				consume();
+				continue;
+			}
+			else if (peek().value()[0] == '>')
+			{
+				tokens.push_back({ .type = TokenType::greater });
+				consume();
+				continue;
+			}
+			else if (peek().value()[0] == '<')
+			{
+				tokens.push_back({ .type = TokenType::lesser });
 				consume();
 				continue;
 			}

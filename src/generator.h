@@ -23,6 +23,29 @@ public:
 
 	}
 
+	void gen_log_expr(NodeLogExpr* expr)
+	{
+		struct LogVisitor {
+			Generator& gen;
+			void operator()(const NodeLogExprGreater* log_greater)
+			{
+				gen.gen_expr(log_greater->lhs);
+				gen.gen_expr(log_greater->rhs);
+				gen.pop("rax");
+				gen.pop("rdi");
+				gen.m_output << "    cmp rdi,rax\n";
+				gen.m_output << "    ja ";
+			}
+			void operator()(const NodeLogExprLesser* log_lesser)
+			{
+
+			}
+		};
+
+		LogVisitor visitor = { .gen = *this };
+		std::visit(visitor, expr->var);
+	}
+
 
 	void gen_term(NodeTerm* term)
 	{
@@ -82,6 +105,10 @@ public:
 					std::vector<std::string> s = { "'",char_val->value.value(),"'" };
 					gen.m_output << "    mov [" << char_val->name << "], " << "dword " << s[0] << s[1] << s[2] << "\n";
 				}
+			}
+			void operator()(NodeLogExpr* log_expr)
+			{
+				gen.gen_log_expr(log_expr);
 			}
 		};
 		TermVisitor visitor = { .gen = *this };

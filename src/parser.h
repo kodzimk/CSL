@@ -52,10 +52,24 @@ struct NodeBinExpr {
 	std::variant<NodeBinExprAdd*, NodeBinExprMulti*, NodeBinExprSub*, NodeBinExprDiv*> var;
 };
 
-struct NodeTerm {
-	std::variant<NodeTermIntVal*, NodeTermVar*,NodeTermParen*,NodeWordCharVal*> var;
+struct NodeLogExprGreater {
+	NodeExpr* lhs;
+	NodeExpr* rhs;
 };
 
+struct NodeLogExprLesser {
+	NodeExpr* lhs;
+	NodeExpr* rhs;
+};
+
+struct NodeLogExpr
+{
+	std::variant<NodeLogExprGreater*, NodeLogExprLesser*> var;
+};
+
+struct NodeTerm {
+	std::variant<NodeTermIntVal*, NodeTermVar*,NodeTermParen*,NodeWordCharVal*,NodeLogExpr*> var;
+};
 
 struct NodeExpr {
 	std::variant<NodeTerm*, NodeBinExpr*> var;
@@ -110,7 +124,6 @@ struct NodeIfPred {
 };
 
 struct NodeStatIf {
-	bool doOthers;
 	NodeExpr* expr{};
 	NodeScope* scope{};
 	std::optional<NodeIfPred*> pred;
@@ -200,6 +213,7 @@ public:
 		if (!term_lhs.has_value()) {
 			return {};
 		}
+
 		auto expr_lhs = m_allocator.emplace<NodeExpr>(term_lhs.value());
 
 		while (true) {
@@ -438,7 +452,6 @@ public:
 			consume();
 			return stat;
 		}
-
 		else if (auto if_ = try_consume(TokenType::ifscope)) {
 			try_consume(TokenType::open_paren, "Expected `(`");
 			auto stmt_if = m_allocator.emplace<NodeStatIf>();
@@ -449,7 +462,7 @@ public:
 				std::cerr << "Invalid expression" << std::endl;
 				exit(EXIT_FAILURE);
 			}
-			try_consume(TokenType::close_paren, "Expected `)`");
+				try_consume(TokenType::close_paren, "Expected `)`");			
 			if (const auto scope = parse_scope()) {
 				stmt_if->scope = scope.value();
 			}

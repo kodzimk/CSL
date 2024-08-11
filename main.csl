@@ -2,13 +2,13 @@ int main()
 {
   char symbol = 's';
   char s = ' ';
-  int a = 10;
+  int a = 1;
 
 
-    if (0) {
-    a = 1;
-    } 
-   elseif(0)
+   if (1) {
+    a = 6;
+   } 
+   elseif(a)
    {
    a = 2;
    }
@@ -21,6 +21,5 @@ int main()
      a = 5;
    }
  
-
   return a;
 }
