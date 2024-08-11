@@ -155,6 +155,47 @@ public:
 		std::visit(visitor, expr->var);
 	}
 
+	void gen_scope(const NodeScope* scope)
+	{
+		begin_scope();
+		for (NodeStat* stmt : scope->stmts) {
+			gen_stat(stmt);
+		}
+		end_scope();
+	}
+
+	void gen_if_pred(const NodeIfPred* pred, const std::string& end_label)
+	{
+		struct PredVisitor {
+			Generator& gen;
+			const std::string& end_label;
+
+			void operator()(const NodeIfPredElif* elif) const
+			{
+				gen.gen_expr(elif->expr);
+				gen.pop("rax");
+				const std::string label = gen.create_label();
+				gen.m_output << "    test rax, rax\n";
+				gen.m_output << "    jz " << label << "\n";
+				gen.gen_scope(elif->scope);
+				gen.m_output << "    jmp " << end_label << "\n";
+				if (elif->pred.has_value()) {
+					gen.m_output << label << ":\n";
+					gen.gen_if_pred(elif->pred.value(), end_label);
+				}
+			}
+
+			void operator()(const NodeIfPredElse* else_) const
+			{
+				gen.gen_scope(else_->scope);
+			}
+		};
+
+		PredVisitor visitor{ .gen = *this, .end_label = end_label };
+		std::visit(visitor, pred->var);
+	}
+
+
 	void gen_stat(NodeStat* stat)
 	{
 		struct StatVisitor {
@@ -237,6 +278,32 @@ public:
 					std::cerr << "Cant find variable not declared!!!" << std::endl;
 					exit(EXIT_FAILURE);
 				}
+			}
+			void operator()(const NodeScope* scope) const
+			{
+				gen.gen_scope(scope);
+			}
+
+			void operator()(const NodeStatIf* stmt_if) const
+			{
+				gen.m_output << "    ;; if\n";
+				gen.gen_expr(stmt_if->expr);
+				gen.pop("rax");
+				const std::string label = gen.create_label();
+				gen.m_output << "    test rax, rax\n";
+				gen.m_output << "    jz " << label << "\n";
+				gen.gen_scope(stmt_if->scope);
+				if (stmt_if->pred.has_value()) {
+					const std::string end_label = gen.create_label();
+					gen.m_output << "    jmp " << end_label << "\n";
+					gen.m_output << label << ":\n";
+					gen.gen_if_pred(stmt_if->pred.value(), end_label);
+					gen.m_output << end_label << ":\n";
+				}
+				else {
+					gen.m_output << label << ":\n";
+				}
+				gen.m_output << "    ;; /if\n";
 			}
 		};
 		StatVisitor visitor = { .gen = *this };
@@ -342,6 +409,26 @@ private:
 		m_stack_size--;
 	}
 
+	void begin_scope()
+	{
+		m_scopes.push_back(m_int_vars.size());
+	}
+
+	void end_scope()
+	{
+		const size_t pop_count = m_int_vars.size() - m_scopes.back();
+		m_output << "    add rsp, " << pop_count * 8 << "\n";
+		m_stack_size -= pop_count;
+		m_scopes.pop_back();
+	}
+
+	std::string create_label()
+	{
+		std::stringstream ss;
+		ss << "label" << m_label_count++;
+		return ss.str();
+	}
+
 
 	size_t m_stack_size = 0;
 	NodeProg prog;
@@ -352,4 +439,7 @@ private:
 	std::unordered_map<std::string,size_t> m_int_vars;
 	std::unordered_map<std::string, int> m_char_vars;
 	std::unordered_map<std::string, std::string> m_types;
+
+	std::vector<size_t> m_scopes{};
+	int m_label_count = 0;
 };

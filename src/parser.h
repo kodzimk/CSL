@@ -87,6 +87,34 @@ struct NodeStatPrint
 	bool newLine;
 };
 
+struct NodeStat;
+
+struct NodeScope {
+	std::vector<NodeStat*> stmts;
+};
+
+struct NodeIfPred;
+
+struct NodeIfPredElif {
+	NodeExpr* expr{};
+	NodeScope* scope{};
+	std::optional<NodeIfPred*> pred;
+};
+
+struct NodeIfPredElse {
+	NodeScope* scope;
+};
+
+struct NodeIfPred {
+	std::variant<NodeIfPredElif*, NodeIfPredElse*> var;
+};
+
+struct NodeStatIf {
+	bool doOthers;
+	NodeExpr* expr{};
+	NodeScope* scope{};
+	std::optional<NodeIfPred*> pred;
+};
 
 struct NodeStatExit
 {
@@ -95,7 +123,7 @@ struct NodeStatExit
 
 struct NodeStat
 {
-	std::variant<NodeStatExit*,NodeStatVar*,NodeStateEq*,NodeStatPrint*> stat;
+	std::variant<NodeStatExit*,NodeStatVar*,NodeStateEq*,NodeStatPrint*,NodeScope*, NodeStatIf*> stat;
 };
 
 struct NodeProg
@@ -220,6 +248,58 @@ public:
 			expr_lhs->var = expr;
 		}
 		return expr_lhs;
+	}
+
+	std::optional<NodeScope*> parse_scope()
+	{
+		if (!try_consume(TokenType::open_brek).has_value()) {
+			return {};
+		}
+		auto scope = m_allocator.emplace<NodeScope>();
+		while (auto stmt = parse_stat()) {
+			scope->stmts.push_back(stmt.value());
+		}
+		try_consume(TokenType::close_brek, "Expected `}`");
+		return scope;
+	}
+
+	std::optional<NodeIfPred*> parse_if_pred()
+	{
+		if (try_consume(TokenType::elseifscope)) {
+			try_consume(TokenType::open_paren, "Expected `(`");
+			const auto elif = m_allocator.alloc<NodeIfPredElif>();
+			if (const auto expr = parse_expr()) {
+				elif->expr = expr.value();
+			}
+			else {
+				std::cerr << "Expected expression" << std::endl;
+				exit(EXIT_FAILURE);
+			}
+			try_consume(TokenType::close_paren, "Expected `)`");
+			if (const auto scope = parse_scope()) {
+				elif->scope = scope.value();
+			}
+			else {
+				std::cerr << "Expected scope" << std::endl;
+				exit(EXIT_FAILURE);
+			}
+			elif->pred = parse_if_pred();
+			auto pred = m_allocator.emplace<NodeIfPred>(elif);
+			return pred;
+		}
+		if (try_consume(TokenType::elsescope)) {
+			auto else_ = m_allocator.alloc<NodeIfPredElse>();
+			if (const auto scope = parse_scope()) {
+				else_->scope = scope.value();
+			}
+			else {
+				std::cerr << "Expected scope" << std::endl;
+				exit(EXIT_FAILURE);
+			}
+			auto pred = m_allocator.emplace<NodeIfPred>(else_);
+			return pred;
+		}
+		return {};
 	}
 
 	std::optional<NodeStat*> parse_stat()
@@ -359,6 +439,29 @@ public:
 			return stat;
 		}
 
+		else if (auto if_ = try_consume(TokenType::ifscope)) {
+			try_consume(TokenType::open_paren, "Expected `(`");
+			auto stmt_if = m_allocator.emplace<NodeStatIf>();
+			if (const auto expr = parse_expr()) {
+				stmt_if->expr = expr.value();
+			}
+			else {
+				std::cerr << "Invalid expression" << std::endl;
+				exit(EXIT_FAILURE);
+			}
+			try_consume(TokenType::close_paren, "Expected `)`");
+			if (const auto scope = parse_scope()) {
+				stmt_if->scope = scope.value();
+			}
+			else {
+				std::cerr << "Invalid scope" << std::endl;
+				exit(EXIT_FAILURE);
+			}
+			stmt_if->pred = parse_if_pred();
+			auto stmt = m_allocator.emplace<NodeStat>(stmt_if);
+			return stmt;
+		}
+
 		return {};
 	}
 
@@ -397,6 +500,15 @@ private:
 			return {};
 		}
 		return m_tokens.at(m_index + offset);
+	}
+
+	Token try_consume(const TokenType type, const std::string& err_msg)
+	{
+		if (peek().has_value() && peek().value().type == type) {
+			return consume();
+		}
+		std::cerr << err_msg << std::endl;
+		exit(EXIT_FAILURE);
 	}
 
 	std::optional<Token> try_consume(const TokenType type)

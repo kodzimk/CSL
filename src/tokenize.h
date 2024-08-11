@@ -23,6 +23,9 @@ enum TokenType
 	 char_val,
 	 print,
 	 newLine,
+	 ifscope,
+	 elseifscope,
+	 elsescope
 };
 
 inline std::string to_string(const TokenType type)
@@ -112,6 +115,21 @@ public:
 				else if (str == "int")
 				{
 					tokens.push_back({ .type = TokenType::integer});
+					str.clear();
+				}
+				else if (str == "elseif")
+				{
+					tokens.push_back({ .type = TokenType::elseifscope });
+					str.clear();
+				}
+				else if (str == "else")
+				{
+					tokens.push_back({ .type = TokenType::elsescope });
+					str.clear();
+				}
+				else if (str == "if")
+				{
+					tokens.push_back({ .type = TokenType::ifscope });
 					str.clear();
 				}
 				else if (str == "main")

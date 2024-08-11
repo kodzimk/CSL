@@ -14,51 +14,42 @@ global _start
 _start:
    mov rax,10
    push rax
-    mov edx,1
-    mov ecx,symbol
-    mov ebx,1
-    mov eax,4
-    int 0x80
-    
-    mov edx,newLineLen
-    mov ecx,newLineMsg
-    mov ebx,1
-    mov eax,4
-    int 0x80
-    
-    mov [temp],dword 'S'
-    mov ecx,temp
-    mov edx,1
-    mov ebx,1
-    mov eax,4
-    int 0x80
-    
-   mov rax,2
-   push rax
-   mov rax,5
+    ;; if
+   mov rax,0
    push rax
     pop rax
-    pop rbx
-    mul rbx
-   push rax
+    test rax, rax
+    jz label0
    mov rax,1
    push rax
-    pop rax
-    pop rbx
-    add rax, rbx
+    add rsp, 0
+    jmp label1
+label0:
+   mov rax,0
    push rax
     pop rax
-    call _printnumberRAX
-    mov edx,newLineLen
-    mov ecx,newLineMsg
-    mov ebx,1
-    mov eax,4
-    int 0x80
-    
-   mov rax,100
+    test rax, rax
+    jz label2
+   mov rax,2
+   push rax
+    add rsp, 0
+    jmp label1
+label2:
+   mov rax,0
    push rax
     pop rax
-    call _printnumberRAX
+    test rax, rax
+    jz label3
+   mov rax,3
+   push rax
+    add rsp, 0
+    jmp label1
+label3:
+   mov rax,5
+   push rax
+    add rsp, 0
+label1:
+    ;; /if
    push QWORD [rsp + 0]
 
     mov rax,60

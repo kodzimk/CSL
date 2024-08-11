@@ -4,10 +4,23 @@ int main()
   char s = ' ';
   int a = 10;
 
-  printf(symbol$n);
-    printf('S');
-  printf(1 + 5 * 2);
-  printf(100);
+
+    if (0) {
+    a = 1;
+    } 
+   elseif(0)
+   {
+   a = 2;
+   }
+    elseif(0)
+   {
+   a = 3;
+   }
+   else
+   {
+     a = 5;
+   }
+ 
 
   return a;
 }
