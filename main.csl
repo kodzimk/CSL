@@ -4,8 +4,9 @@ int main()
   char s = ' ';
   int a = 10;
 
-  printf(a);
-  printf(1);
+  printf(symbol$n);
+    printf('S');
+  printf(1 + 5 * 2);
   printf(100);
 
   return a;

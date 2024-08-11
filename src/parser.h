@@ -84,6 +84,7 @@ struct NodeStatPrint
 	std::optional<std::string> variableName;
 	NodeExpr* expr;
 	std::string type;
+	bool newLine;
 };
 
 
@@ -346,6 +347,13 @@ public:
 
 			stat_print->expr = parse_expr().value();
 			stat->stat = stat_print;
+
+			if (peek().has_value() && peek().value().type == TokenType::newLine)
+			{
+				stat_print->newLine = true;
+				consume();
+			}
+
 			consume();
 			consume();
 			return stat;

@@ -14,14 +14,47 @@ global _start
 _start:
    mov rax,10
    push rax
-   push QWORD [rsp + 0]
-
+    mov edx,1
+    mov ecx,symbol
+    mov ebx,1
+    mov eax,4
+    int 0x80
+    
+    mov edx,newLineLen
+    mov ecx,newLineMsg
+    mov ebx,1
+    mov eax,4
+    int 0x80
+    
+    mov [temp],dword 'S'
+    mov ecx,temp
+    mov edx,1
+    mov ebx,1
+    mov eax,4
+    int 0x80
+    
+   mov rax,2
+   push rax
+   mov rax,5
+   push rax
     pop rax
-    call _printnumberRAX
+    pop rbx
+    mul rbx
+   push rax
    mov rax,1
    push rax
     pop rax
+    pop rbx
+    add rax, rbx
+   push rax
+    pop rax
     call _printnumberRAX
+    mov edx,newLineLen
+    mov ecx,newLineMsg
+    mov ebx,1
+    mov eax,4
+    int 0x80
+    
    mov rax,100
    push rax
     pop rax

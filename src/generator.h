@@ -177,13 +177,6 @@ public:
 					gen.m_output << "    mov eax,4" << "\n";
 					gen.m_output << "    int 0x80\n";
 					gen.m_output << "    \n";
-
-					gen.m_output << "    mov edx,newLineLen" << "\n";
-					gen.m_output << "    mov ecx,newLineMsg" << "\n";
-					gen.m_output << "    mov ebx,1" << "\n";
-					gen.m_output << "    mov eax,4" << "\n";
-					gen.m_output << "    int 0x80\n";
-					gen.m_output << "    \n";
 				}
 				else if (stat_print->type == "character")
 				{
@@ -197,13 +190,6 @@ public:
 						gen.m_output << "    mov eax,4" << "\n";
 						gen.m_output << "    int 0x80\n";
 						gen.m_output << "    \n";
-
-						gen.m_output << "    mov edx,newLineLen" << "\n";
-						gen.m_output << "    mov ecx,newLineMsg" << "\n";
-						gen.m_output << "    mov ebx,1" << "\n";
-						gen.m_output << "    mov eax,4" << "\n";
-						gen.m_output << "    int 0x80\n";
-						gen.m_output << "    \n";
 				}
 				else if (stat_print->type == "integer" || (stat_print->variableName.has_value() && gen.m_types.contains(stat_print->variableName.value()) && gen.m_types.at(stat_print->variableName.value()) == "integer"))
 				{
@@ -211,6 +197,16 @@ public:
 					gen.pop("rax");
 					gen.m_output << "    call _printnumberRAX\n";
 				}		
+			    
+				if (stat_print->newLine)
+				{
+					gen.m_output << "    mov edx,newLineLen" << "\n";
+					gen.m_output << "    mov ecx,newLineMsg" << "\n";
+					gen.m_output << "    mov ebx,1" << "\n";
+					gen.m_output << "    mov eax,4" << "\n";
+					gen.m_output << "    int 0x80\n";
+					gen.m_output << "    \n";
+				}
 			}
 			void operator()(const NodeStatVar* stat_var)
 			{

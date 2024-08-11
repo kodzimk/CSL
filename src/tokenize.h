@@ -22,6 +22,7 @@ enum TokenType
 	 close_char,
 	 char_val,
 	 print,
+	 newLine,
 };
 
 inline std::string to_string(const TokenType type)
@@ -142,6 +143,13 @@ public:
 			else if (peek().value()[0] == '(')
 			{
 				tokens.push_back({ .type = TokenType::open_paren });
+				consume();
+				continue;
+			}
+			else if (peek().value()[0] == '$' && peek(1).has_value() && peek(1).value()[0] == 'n')
+			{
+				tokens.push_back({ .type = TokenType::newLine });
+				consume();
 				consume();
 				continue;
 			}
