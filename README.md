@@ -5,7 +5,7 @@ CSL(C Style Language) - written fully in c++.
 # Features
 
 1) Enter function(int main())
-2) Data types(int,char,string)
+2) Data types(int,char,string,bool,double)
 3) All features for data types such as giving number and variables
 4) increment and decrement
 5) output smth(printf function)
