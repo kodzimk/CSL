@@ -2,24 +2,13 @@ int main()
 {
   char symbol = 's';
   char s = ' ';
-  int a = 1;
+  int a = 2;
 
+  if(6 > 5)
+  {
+     a = 3;
+  }
 
-   if (1) {
-    a = 6;
-   } 
-   elseif(a)
-   {
-   a = 2;
-   }
-    elseif(0)
-   {
-   a = 3;
-   }
-   else
-   {
-     a = 5;
-   }
- 
+  printf(a);
   return a;
 }

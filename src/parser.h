@@ -67,12 +67,17 @@ struct NodeLogExpr
 	std::variant<NodeLogExprGreater*, NodeLogExprLesser*> var;
 };
 
+struct NodeTermIncrement
+{
+	std::string name;
+};
+
 struct NodeTerm {
 	std::variant<NodeTermIntVal*, NodeTermVar*,NodeTermParen*,NodeWordCharVal*,NodeLogExpr*> var;
 };
 
 struct NodeExpr {
-	std::variant<NodeTerm*, NodeBinExpr*> var;
+	std::variant<NodeTerm*, NodeBinExpr*,NodeLogExpr*> var;
 };
 
 struct NodeStmtExit {
@@ -261,6 +266,27 @@ public:
 			}
 			expr_lhs->var = expr;
 		}
+
+		std::optional<Token> curr_tok = peek();
+		std::optional<int> prec;
+
+		if (curr_tok.has_value()) {
+			prec = log_prec(curr_tok->type);
+			if (prec.has_value()) {
+				if (prec.value() == 0)
+				{
+		             NodeLogExpr* log_expr =  m_allocator.emplace<NodeLogExpr>();
+					 NodeLogExprGreater* log_expr_greater = m_allocator.emplace<NodeLogExprGreater>();
+					 log_expr_greater->lhs = m_allocator.emplace<NodeExpr>();
+					 log_expr_greater->lhs->var = term_lhs.value();
+					 consume();
+					 log_expr_greater->rhs = parse_expr().value();
+					 log_expr->var = log_expr_greater;
+					 expr_lhs->var = log_expr;
+				}
+			}
+		}
+
 		return expr_lhs;
 	}
 

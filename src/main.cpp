@@ -5,6 +5,8 @@
 
 int main(int argc,char** argv)
 {
+    int a = 1 > 2;
+    std::cout << a << std::endl;
 	std::string filename = "main.csl";
 	//std::cout << "Enter file name: ";
 	//std::getline(std::cin, filename);

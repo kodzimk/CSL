@@ -12,50 +12,41 @@ s db ' ',0xA,0xD
 section .text
 global _start
 _start:
-   mov rax,1
-   push rax
-    ;; if
-   mov rax,1
-   push rax
-    pop rax
-    test rax, rax
-    jz label0
-   mov rax,6
-   push rax
-    add rsp, 0
-    jmp label1
-label0:
-   push QWORD [rsp + 0]
-
-    pop rax
-    test rax, rax
-    jz label2
    mov rax,2
    push rax
-    add rsp, 0
-    jmp label1
-label2:
-   mov rax,0
+   mov rax,5
+   push rax
+   mov rax,6
    push rax
     pop rax
-    test rax, rax
-    jz label3
+    pop rbx
+    cmp rax, rbx
+    jc  carry_set
+    mov rax,rdi
+   push rax
+    pop rax
+    cmp rax,1
+    je label0
+ 
    mov rax,3
    push rax
     add rsp, 0
-    jmp label1
-label3:
-   mov rax,5
-   push rax
-    add rsp, 0
-label1:
-    ;; /if
+label0:
+  
    push QWORD [rsp + 0]
 
-    mov rax,60
-    pop rdi
-    syscall
+    pop rax
+    call _printnumberRAX
+   push QWORD [rsp + 0]
 
+    pop rdi
+    jmp exit
+
+carry_set:
+    mov rdi, 1
+exit:
+    mov rax, 60
+    syscall
 _printnumberRAX:
 mov rcx, stringBuffer
 mov rbx, 10

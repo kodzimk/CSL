@@ -29,12 +29,15 @@ public:
 			Generator& gen;
 			void operator()(const NodeLogExprGreater* log_greater)
 			{
-				gen.gen_expr(log_greater->lhs);
 				gen.gen_expr(log_greater->rhs);
+				gen.gen_expr(log_greater->lhs);
 				gen.pop("rax");
-				gen.pop("rdi");
-				gen.m_output << "    cmp rdi,rax\n";
-				gen.m_output << "    ja ";
+				gen.pop("rbx");
+				gen.m_output << "    cmp rax, rbx\n";
+				gen.m_output << "    jc  carry_set\n";
+				gen.m_output << "    mov rax,rdi\n";
+				gen.push("rax");
+
 			}
 			void operator()(const NodeLogExprLesser* log_lesser)
 			{
@@ -177,6 +180,10 @@ public:
 			{
 				gen.gen_bin_expr(bin_expr);
 			}
+			void operator()(NodeLogExpr* log_expr)
+			{
+				gen.gen_log_expr(log_expr);
+			}
 		};
 		ExprVisitor visitor = { .gen = *this };
 		std::visit(visitor, expr->var);
@@ -200,16 +207,16 @@ public:
 			void operator()(const NodeIfPredElif* elif) const
 			{
 				gen.gen_expr(elif->expr);
-				gen.pop("rax");
 				const std::string label = gen.create_label();
-				gen.m_output << "    test rax, rax\n";
-				gen.m_output << "    jz " << label << "\n";
+				gen.m_output << "    ja " << label << "\n";
+				gen.m_output << " \n";
 				gen.gen_scope(elif->scope);
 				gen.m_output << "    jmp " << end_label << "\n";
 				if (elif->pred.has_value()) {
 					gen.m_output << label << ":\n";
 					gen.gen_if_pred(elif->pred.value(), end_label);
 				}
+				gen.m_output << "\n";
 			}
 
 			void operator()(const NodeIfPredElse* else_) const
@@ -230,10 +237,9 @@ public:
 			void operator()(const NodeStatExit* stat_exit)
 			{
 				gen.gen_expr(stat_exit->expr);
-
-				gen.m_output << "    mov rax,60\n";
+				
 				gen.pop("rdi");
-				gen.m_output << "    syscall\n";
+				gen.m_output << "    jmp exit\n";
 			}
 			void operator()(const NodeStatPrint* stat_print)
 			{
@@ -313,12 +319,13 @@ public:
 
 			void operator()(const NodeStatIf* stmt_if) const
 			{
-				gen.m_output << "    ;; if\n";
 				gen.gen_expr(stmt_if->expr);
 				gen.pop("rax");
 				const std::string label = gen.create_label();
-				gen.m_output << "    test rax, rax\n";
-				gen.m_output << "    jz " << label << "\n";
+				gen.m_output << "    cmp rax,1\n";
+				gen.m_output << "    je " << label << "\n";
+			
+				gen.m_output << " \n";
 				gen.gen_scope(stmt_if->scope);
 				if (stmt_if->pred.has_value()) {
 					const std::string end_label = gen.create_label();
@@ -330,7 +337,7 @@ public:
 				else {
 					gen.m_output << label << ":\n";
 				}
-				gen.m_output << "    ;; /if\n";
+				gen.m_output << "  \n";
 			}
 		};
 		StatVisitor visitor = { .gen = *this };
@@ -344,6 +351,12 @@ public:
 		m_data << "newLineMsg db 0xA, 0xD\n";
 		m_data << "newLineLen equ $ - newLineMsg\n";\
 		m_data << "temp db 'a',0xA,0xD\n";
+
+		m_functions << "carry_set:\n";
+		m_functions << "    mov rdi, 1\n";
+		m_functions << "exit:\n";
+		m_functions << "    mov rax, 60\n";
+		m_functions << "    syscall\n";
 
 		m_functions << "_printnumberRAX:\n";
 		m_functions << "mov rcx, stringBuffer\n";
@@ -408,8 +421,6 @@ public:
 		{
 			gen_stat(prog.stats[i]);
 		}
-
-		
 		std::string output = m_bss.str();
 		output += '\n';
 		output += m_data.str();
@@ -421,9 +432,6 @@ public:
 	}
 
 private:
-
-
-
 	void push(std::string reg)
 	{
 		m_output << "   push " << reg << '\n';

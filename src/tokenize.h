@@ -86,6 +86,18 @@ inline std::optional<int> bin_prec(const TokenType type)
 	}
 }
 
+inline std::optional<int> log_prec(const TokenType type)
+{
+	switch (type) {
+	case TokenType::greater:
+		return 0;
+	case TokenType::lesser:
+		return 1;
+	default:
+		return {};
+	}
+}
+
 class Tokenize
 {
 public:
@@ -152,7 +164,7 @@ public:
 				else
 				{
 						tokens.push_back({ .type = TokenType::variable, .value = str });
-					str.clear();
+					    str.clear();
 				}
 			}
 			else if (peek().value()[0] == ' ')
