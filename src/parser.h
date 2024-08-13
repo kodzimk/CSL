@@ -62,9 +62,19 @@ struct NodeLogExprLesser {
 	NodeExpr* rhs;
 };
 
+struct NodeLogExprEqual {
+	NodeExpr* lhs;
+	NodeExpr* rhs;
+};
+
+struct NodeLogExprNotEqual {
+	NodeExpr* lhs;
+	NodeExpr* rhs;
+};
+
 struct NodeLogExpr
 {
-	std::variant<NodeLogExprGreater*, NodeLogExprLesser*> var;
+	std::variant<NodeLogExprGreater*, NodeLogExprLesser*, NodeLogExprEqual*, NodeLogExprNotEqual*> var;
 };
 
 struct NodeTermIncrement
@@ -283,6 +293,39 @@ public:
 					 log_expr_greater->rhs = parse_expr().value();
 					 log_expr->var = log_expr_greater;
 					 expr_lhs->var = log_expr;
+				}
+				else if (prec.value() == 1)
+				{
+					NodeLogExpr* log_expr = m_allocator.emplace<NodeLogExpr>();
+					NodeLogExprLesser* log_expr_lesser = m_allocator.emplace<NodeLogExprLesser>();
+					log_expr_lesser->lhs = m_allocator.emplace<NodeExpr>();
+					log_expr_lesser->lhs->var = term_lhs.value();
+					consume();
+					log_expr_lesser->rhs = parse_expr().value();
+					log_expr->var = log_expr_lesser;
+					expr_lhs->var = log_expr;
+				}
+				else if (prec.value() == 2)
+				{
+					NodeLogExpr* log_expr = m_allocator.emplace<NodeLogExpr>();
+					NodeLogExprEqual* log_expr_equal = m_allocator.emplace<NodeLogExprEqual>();
+					log_expr_equal->lhs = m_allocator.emplace<NodeExpr>();
+					log_expr_equal->lhs->var = term_lhs.value();
+					consume();
+					log_expr_equal->rhs = parse_expr().value();
+					log_expr->var = log_expr_equal;
+					expr_lhs->var = log_expr;
+				}
+				else if (prec.value() == 3)
+				{
+					NodeLogExpr* log_expr = m_allocator.emplace<NodeLogExpr>();
+					NodeLogExprNotEqual* log_expr_notequal = m_allocator.emplace<NodeLogExprNotEqual>();
+					log_expr_notequal->lhs = m_allocator.emplace<NodeExpr>();
+					log_expr_notequal->lhs->var = term_lhs.value();
+					consume();
+					log_expr_notequal->rhs = parse_expr().value();
+					log_expr->var = log_expr_notequal;
+					expr_lhs->var = log_expr;
 				}
 			}
 		}

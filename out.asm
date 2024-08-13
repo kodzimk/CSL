@@ -14,18 +14,23 @@ global _start
 _start:
    mov rax,2
    push rax
-   mov rax,5
+   mov rax,4
    push rax
-   mov rax,6
+   mov rax,5
    push rax
     pop rax
     pop rbx
+    mov rsi, 1
     cmp rax, rbx
-    jc  carry_set
-    mov rax,rdi
+    jne carry_set0
+    
+    mov rsi, 0
+carry_set0:
+    
+mov rax,rsi
    push rax
     pop rax
-    cmp rax,1
+    cmp rax,0
     je label0
  
    mov rax,3
@@ -42,8 +47,6 @@ label0:
     pop rdi
     jmp exit
 
-carry_set:
-    mov rdi, 1
 exit:
     mov rax, 60
     syscall

@@ -4,11 +4,12 @@ int main()
   char s = ' ';
   int a = 2;
 
-  if(6 > 5)
+  if(5 != 4)
   {
      a = 3;
   }
 
   printf(a);
+
   return a;
 }

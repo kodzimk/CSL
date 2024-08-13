@@ -33,15 +33,75 @@ public:
 				gen.gen_expr(log_greater->lhs);
 				gen.pop("rax");
 				gen.pop("rbx");
-				gen.m_output << "    cmp rax, rbx\n";
-				gen.m_output << "    jc  carry_set\n";
-				gen.m_output << "    mov rax,rdi\n";
-				gen.push("rax");
+				gen.m_output << "    mov rsi, 1\n";
+				gen.m_output << "    cmp rbx, rax\n";
+				gen.m_output << "    jc carry_set" << std::to_string(gen.carry_count) << "\n";
+				
+				gen.m_output << "    \n";
+				gen.m_output << "    mov rsi, 0\n";
+				gen.m_output << "carry_set" << std::to_string(gen.carry_count) << ":\n";
+				gen.m_output << "    \n";
 
+				gen.m_output << "mov rax,rsi\n";
+				gen.push("rax");
+				gen.carry_count++;
 			}
 			void operator()(const NodeLogExprLesser* log_lesser)
 			{
+				gen.gen_expr(log_lesser->rhs);
+				gen.gen_expr(log_lesser->lhs);
+				gen.pop("rax");
+				gen.pop("rbx");
+				gen.m_output << "    mov rsi, 1\n";
+				gen.m_output << "    cmp rax, rbx\n";
+				gen.m_output << "    jc carry_set" << std::to_string(gen.carry_count) << "\n";
 
+				gen.m_output << "    \n";
+				gen.m_output << "    mov rsi, 0\n";
+				gen.m_output << "carry_set" << std::to_string(gen.carry_count) << ":\n";
+				gen.m_output << "    \n";
+
+				gen.m_output << "mov rax,rsi\n";
+				gen.push("rax");
+				gen.carry_count++;
+			}
+			void operator()(const NodeLogExprEqual* log_equal)
+			{
+				gen.gen_expr(log_equal->rhs);
+				gen.gen_expr(log_equal->lhs);
+				gen.pop("rax");
+				gen.pop("rbx");
+				gen.m_output << "    mov rsi, 1\n";
+				gen.m_output << "    cmp rax, rbx\n";
+				gen.m_output << "    je carry_set" << std::to_string(gen.carry_count) << "\n";
+
+				gen.m_output << "    \n";
+				gen.m_output << "    mov rsi, 0\n";
+				gen.m_output << "carry_set" << std::to_string(gen.carry_count) << ":\n";
+				gen.m_output << "    \n";
+
+				gen.m_output << "mov rax,rsi\n";
+				gen.push("rax");
+				gen.carry_count++;
+			}
+			void operator()(const NodeLogExprNotEqual* log_not_equal)
+			{
+				gen.gen_expr(log_not_equal->rhs);
+				gen.gen_expr(log_not_equal->lhs);
+				gen.pop("rax");
+				gen.pop("rbx");
+				gen.m_output << "    mov rsi, 1\n";
+				gen.m_output << "    cmp rax, rbx\n";
+				gen.m_output << "    jne carry_set" << std::to_string(gen.carry_count) << "\n";
+
+				gen.m_output << "    \n";
+				gen.m_output << "    mov rsi, 0\n";
+				gen.m_output << "carry_set" << std::to_string(gen.carry_count) << ":\n";
+				gen.m_output << "    \n";
+
+				gen.m_output << "mov rax,rsi\n";
+				gen.push("rax");
+				gen.carry_count++;
 			}
 		};
 
@@ -207,8 +267,10 @@ public:
 			void operator()(const NodeIfPredElif* elif) const
 			{
 				gen.gen_expr(elif->expr);
+				gen.pop("rax");
 				const std::string label = gen.create_label();
-				gen.m_output << "    ja " << label << "\n";
+				gen.m_output << "    cmp rax,0\n";
+				gen.m_output << "    je " << label << "\n";
 				gen.m_output << " \n";
 				gen.gen_scope(elif->scope);
 				gen.m_output << "    jmp " << end_label << "\n";
@@ -228,8 +290,6 @@ public:
 		PredVisitor visitor{ .gen = *this, .end_label = end_label };
 		std::visit(visitor, pred->var);
 	}
-
-
 	void gen_stat(NodeStat* stat)
 	{
 		struct StatVisitor {
@@ -322,7 +382,7 @@ public:
 				gen.gen_expr(stmt_if->expr);
 				gen.pop("rax");
 				const std::string label = gen.create_label();
-				gen.m_output << "    cmp rax,1\n";
+				gen.m_output << "    cmp rax,0\n";
 				gen.m_output << "    je " << label << "\n";
 			
 				gen.m_output << " \n";
@@ -352,8 +412,6 @@ public:
 		m_data << "newLineLen equ $ - newLineMsg\n";\
 		m_data << "temp db 'a',0xA,0xD\n";
 
-		m_functions << "carry_set:\n";
-		m_functions << "    mov rdi, 1\n";
 		m_functions << "exit:\n";
 		m_functions << "    mov rax, 60\n";
 		m_functions << "    syscall\n";
@@ -477,4 +535,5 @@ private:
 
 	std::vector<size_t> m_scopes{};
 	int m_label_count = 0;
+	int carry_count = 0;
 };

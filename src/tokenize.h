@@ -28,6 +28,8 @@ enum TokenType
 	 elsescope,
 	 greater,
 	 lesser,
+	 notequal,
+	 equal,
 };
 
 inline std::string to_string(const TokenType type)
@@ -93,6 +95,10 @@ inline std::optional<int> log_prec(const TokenType type)
 		return 0;
 	case TokenType::lesser:
 		return 1;
+	case TokenType::equal:
+		return 2;
+	case TokenType::notequal:
+		return 3;
 	default:
 		return {};
 	}
@@ -256,15 +262,40 @@ public:
 			}
 			else if (peek().value()[0] == '=')
 			{
-				tokens.push_back({ .type = TokenType::eq });
-				consume();
-				continue;
+				if (peek(1).has_value() && peek(1).value()[0] == '=')
+				{
+					tokens.push_back({ .type = TokenType::equal });
+					consume();
+					consume();
+					continue;
+				}
+				else
+				{
+					tokens.push_back({ .type = TokenType::eq });
+					consume();
+					continue;
+				}
 			}
 			else if (peek().value()[0] == ';')
 			{
 				tokens.push_back({ .type = TokenType::semi });
 				consume();
 				continue;
+			}
+			else if (peek().value()[0] == '!')
+			{
+				if (peek(1).has_value() && peek(1).value()[0] == '=')
+				{
+					tokens.push_back({ .type = TokenType::notequal });
+					consume();
+					consume();
+					continue;
+				}
+				else
+				{
+					std::cerr << "Dont exist!!!" << std::endl;
+					exit(EXIT_FAILURE);
+				}
 			}
 			else if (isdigit(peek().value()[0]))
 			{
