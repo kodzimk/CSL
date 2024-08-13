@@ -103,6 +103,44 @@ public:
 				gen.push("rax");
 				gen.carry_count++;
 			}
+			void operator()(const NodeLogExprGreaterEqual* log_greater_equal)
+			{
+				gen.gen_expr(log_greater_equal->rhs);
+				gen.gen_expr(log_greater_equal->lhs);
+				gen.pop("rax");
+				gen.pop("rbx");
+				gen.m_output << "    mov rsi, 1\n";
+				gen.m_output << "    cmp rax, rbx\n";
+				gen.m_output << "    jge carry_set" << std::to_string(gen.carry_count) << "\n";
+
+				gen.m_output << "    \n";
+				gen.m_output << "    mov rsi, 0\n";
+				gen.m_output << "carry_set" << std::to_string(gen.carry_count) << ":\n";
+				gen.m_output << "    \n";
+
+				gen.m_output << "mov rax,rsi\n";
+				gen.push("rax");
+				gen.carry_count++;
+			}
+			void operator()(const NodeLogExprLesserEqual* log_lesser_equal)
+			{
+				gen.gen_expr(log_lesser_equal->rhs);
+				gen.gen_expr(log_lesser_equal->lhs);
+				gen.pop("rax");
+				gen.pop("rbx");
+				gen.m_output << "    mov rsi, 1\n";
+				gen.m_output << "    cmp rbx, rax\n";
+				gen.m_output << "    jge carry_set" << std::to_string(gen.carry_count) << "\n";
+
+				gen.m_output << "    \n";
+				gen.m_output << "    mov rsi, 0\n";
+				gen.m_output << "carry_set" << std::to_string(gen.carry_count) << ":\n";
+				gen.m_output << "    \n";
+
+				gen.m_output << "mov rax,rsi\n";
+				gen.push("rax");
+				gen.carry_count++;
+			}
 		};
 
 		LogVisitor visitor = { .gen = *this };
@@ -271,14 +309,20 @@ public:
 				const std::string label = gen.create_label();
 				gen.m_output << "    cmp rax,0\n";
 				gen.m_output << "    je " << label << "\n";
+
 				gen.m_output << " \n";
 				gen.gen_scope(elif->scope);
-				gen.m_output << "    jmp " << end_label << "\n";
 				if (elif->pred.has_value()) {
+					const std::string end_label = gen.create_label();
+					gen.m_output << "    jmp " << end_label << "\n";
 					gen.m_output << label << ":\n";
 					gen.gen_if_pred(elif->pred.value(), end_label);
+					gen.m_output << end_label << ":\n";
 				}
-				gen.m_output << "\n";
+				else {
+					gen.m_output << label << ":\n";
+				}
+				gen.m_output << "  \n";
 			}
 
 			void operator()(const NodeIfPredElse* else_) const
@@ -376,7 +420,6 @@ public:
 			{
 				gen.gen_scope(scope);
 			}
-
 			void operator()(const NodeStatIf* stmt_if) const
 			{
 				gen.gen_expr(stmt_if->expr);
@@ -398,6 +441,26 @@ public:
 					gen.m_output << label << ":\n";
 				}
 				gen.m_output << "  \n";
+			}
+			void operator()(const NodeStatIncerement* inc)
+			{
+				gen.gen_expr(inc->expr);
+				gen.pop("rax");
+				gen.m_output << "   inc rax\n";
+				gen.push("rax");
+
+				if (gen.m_int_vars.contains(inc->variableName))
+					gen.m_int_vars.at(inc->variableName) = gen.m_stack_size - 1;
+			}
+			void operator()(const NodeStatDecrement* inc)
+			{
+				gen.gen_expr(inc->expr);
+				gen.pop("rax");
+				gen.m_output << "   dec rax\n";
+				gen.push("rax");
+
+				if (gen.m_int_vars.contains(inc->variableName))
+					gen.m_int_vars.at(inc->variableName) = gen.m_stack_size - 1;
 			}
 		};
 		StatVisitor visitor = { .gen = *this };
@@ -433,43 +496,21 @@ public:
 		m_functions << "inc rcx\n";
 		m_functions << "mov[stringBufferPos], rcx\n";
 		m_functions << "pop rax;\n";
-			m_functions << "cmp rax, 0\n";
-			m_functions << "jne _printnumberRAXLoop\n";
-			m_functions << "_printnumberRAXLoop2 :\n";
-			m_functions << "mov rcx, [stringBufferPos]\n";
-			m_functions << "mov rax, 1\n";
-			m_functions << "mov rdi, 1\n";
-				m_functions << "mov rsi, rcx\n";
-				m_functions << "mov rdx, 1\n";
-				m_functions << "syscall\n";
-
-				m_functions << "mov rcx, [stringBufferPos]\n";
-				m_functions << "dec rcx\n";
-				m_functions << "mov[stringBufferPos], rcx\n";
-				m_functions << "cmp rcx, stringBuffer\n";
-				m_functions << "jge _printnumberRAXLoop2\n";
-				m_functions << "ret\n";
-
-				/*m_functions << "euklid :\n";
-				m_functions << "cmp bx, cx\n";
-				m_functions << "je finish\n";
-				m_functions << "jg again\n";
-				m_functions << "xchg bx, cx\n";
-				m_functions << "again :\n";
-				m_functions << "mov ax, bx\n";
-				m_functions << "mov bx, cx\n";
-				m_functions << "xor dx, dx\n";
-				m_functions << "div cx\n";
-				m_functions << "cmp dx, 0\n";
-				m_functions << "je finish\n";
-				m_functions << "mov bx, cx\n";
-				m_functions << "mov cx, dx\n";
-
-				m_functions << "jmp again\n";
-
-				m_functions << "finish :\n";
-				m_functions << "ret\n";*/
-
+		m_functions << "cmp rax, 0\n";
+		m_functions << "jne _printnumberRAXLoop\n";
+		m_functions << "_printnumberRAXLoop2 :\n";
+		m_functions << "mov rcx, [stringBufferPos]\n";
+		m_functions << "mov rax, 1\n";
+		m_functions << "mov rdi, 1\n";
+		m_functions << "mov rsi, rcx\n";
+		m_functions << "mov rdx, 1\n";
+		m_functions << "syscall\n";
+		m_functions << "mov rcx, [stringBufferPos]\n";
+		m_functions << "dec rcx\n";
+		m_functions << "mov[stringBufferPos], rcx\n";
+		m_functions << "cmp rcx, stringBuffer\n";
+		m_functions << "jge _printnumberRAXLoop2\n";
+		m_functions << "ret\n";
 		m_output << "section .text\n";
 		m_output << "global _start\n";
 		m_output << "_start:\n";
@@ -518,7 +559,8 @@ private:
 	std::string create_label()
 	{
 		std::stringstream ss;
-		ss << "label" << m_label_count++;
+		ss << "label" << m_label_count;
+		m_label_count++;
 		return ss.str();
 	}
 
@@ -534,6 +576,7 @@ private:
 	std::unordered_map<std::string, std::string> m_types;
 
 	std::vector<size_t> m_scopes{};
+
 	int m_label_count = 0;
 	int carry_count = 0;
 };

@@ -4,12 +4,16 @@ int main()
   char s = ' ';
   int a = 2;
 
-  if(5 != 4)
+  if(4 > 3)
   {
-     a = 3;
+  a = a + 3;
   }
 
-  printf(a);
+  a++;
+  a++;
+  a++;
+  a--;
+
 
   return a;
 }

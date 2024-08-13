@@ -72,14 +72,31 @@ struct NodeLogExprNotEqual {
 	NodeExpr* rhs;
 };
 
-struct NodeLogExpr
-{
-	std::variant<NodeLogExprGreater*, NodeLogExprLesser*, NodeLogExprEqual*, NodeLogExprNotEqual*> var;
+struct NodeLogExprGreaterEqual {
+	NodeExpr* lhs;
+	NodeExpr* rhs;
 };
 
-struct NodeTermIncrement
+struct NodeLogExprLesserEqual {
+	NodeExpr* lhs;
+	NodeExpr* rhs;
+};
+
+struct NodeLogExpr
 {
-	std::string name;
+	std::variant<NodeLogExprGreater*, NodeLogExprLesser*, NodeLogExprEqual*, NodeLogExprNotEqual*,NodeLogExprGreaterEqual*,NodeLogExprLesserEqual*> var;
+};
+
+struct NodeStatIncerement
+{
+	NodeExpr* expr;
+	std::string variableName;
+};
+
+struct NodeStatDecrement
+{
+	NodeExpr* expr;
+	std::string variableName;
 };
 
 struct NodeTerm {
@@ -151,7 +168,7 @@ struct NodeStatExit
 
 struct NodeStat
 {
-	std::variant<NodeStatExit*,NodeStatVar*,NodeStateEq*,NodeStatPrint*,NodeScope*, NodeStatIf*> stat;
+	std::variant<NodeStatExit*,NodeStatVar*,NodeStateEq*,NodeStatPrint*,NodeScope*, NodeStatIf*,NodeStatIncerement*, NodeStatDecrement*> stat;
 };
 
 struct NodeProg
@@ -231,108 +248,134 @@ public:
 
 		auto expr_lhs = m_allocator.emplace<NodeExpr>(term_lhs.value());
 
-		while (true) {
-			std::optional<Token> curr_tok = peek();
-			std::optional<int> prec;
-			if (curr_tok.has_value()) {
-				prec = bin_prec(curr_tok->type);
-				if (!prec.has_value() || prec < min_prec) {
+		if (peek(1).has_value() && peek(1).value().type != TokenType::plus && peek(1).value().type != TokenType::minus)
+		{
+			while (true) {
+				std::optional<Token> curr_tok = peek();
+				std::optional<int> prec;
+				if (curr_tok.has_value()) {
+					prec = bin_prec(curr_tok->type);
+					if (!prec.has_value() || prec < min_prec) {
+						break;
+					}
+				}
+				else {
 					break;
 				}
+				const auto [type, line, value] = consume();
+				const int next_min_prec = prec.value() + 1;
+				auto expr_rhs = parse_expr(next_min_prec);
+				if (!expr_rhs.has_value()) {
+					error_expected("expression");
+				}
+				auto expr = m_allocator.emplace<NodeBinExpr>();
+				auto expr_lhs2 = m_allocator.emplace<NodeExpr>();
+				if (type == TokenType::plus) {
+					expr_lhs2->var = expr_lhs->var;
+					auto add = m_allocator.emplace<NodeBinExprAdd>(expr_lhs2, expr_rhs.value());
+					expr->var = add;
+				}
+				else if (type == TokenType::star) {
+					expr_lhs2->var = expr_lhs->var;
+					auto multi = m_allocator.emplace<NodeBinExprMulti>(expr_lhs2, expr_rhs.value());
+					expr->var = multi;
+				}
+				else if (type == TokenType::minus) {
+					expr_lhs2->var = expr_lhs->var;
+					auto sub = m_allocator.emplace<NodeBinExprSub>(expr_lhs2, expr_rhs.value());
+					expr->var = sub;
+				}
+				else if (type == TokenType::fslash) {
+					expr_lhs2->var = expr_lhs->var;
+					auto div = m_allocator.emplace<NodeBinExprDiv>(expr_lhs2, expr_rhs.value());
+					expr->var = div;
+				}
+				else {
+					assert(false); // Unreachable;
+				}
+				expr_lhs->var = expr;
 			}
-			else {
-				break;
-			}
-			const auto [type, line, value] = consume();
-			const int next_min_prec = prec.value() + 1;
-			auto expr_rhs = parse_expr(next_min_prec);
-			if (!expr_rhs.has_value()) {
-				error_expected("expression");
-			}
-			auto expr = m_allocator.emplace<NodeBinExpr>();
-			auto expr_lhs2 = m_allocator.emplace<NodeExpr>();
-			if (type == TokenType::plus) {
-				expr_lhs2->var = expr_lhs->var;
-				auto add = m_allocator.emplace<NodeBinExprAdd>(expr_lhs2, expr_rhs.value());
-				expr->var = add;
-			}
-			else if (type == TokenType::star) {
-				expr_lhs2->var = expr_lhs->var;
-				auto multi = m_allocator.emplace<NodeBinExprMulti>(expr_lhs2, expr_rhs.value());
-				expr->var = multi;
-			}
-			else if (type == TokenType::minus) {
-				expr_lhs2->var = expr_lhs->var;
-				auto sub = m_allocator.emplace<NodeBinExprSub>(expr_lhs2, expr_rhs.value());
-				expr->var = sub;
-			}
-			else if (type == TokenType::fslash) {
-				expr_lhs2->var = expr_lhs->var;
-				auto div = m_allocator.emplace<NodeBinExprDiv>(expr_lhs2, expr_rhs.value());
-				expr->var = div;
-			}
-			else {
-				assert(false); // Unreachable;
-			}
-			expr_lhs->var = expr;
 		}
 
 		std::optional<Token> curr_tok = peek();
 		std::optional<int> prec;
 
-		if (curr_tok.has_value()) {
-			prec = log_prec(curr_tok->type);
-			if (prec.has_value()) {
-				if (prec.value() == 0)
-				{
-		             NodeLogExpr* log_expr =  m_allocator.emplace<NodeLogExpr>();
-					 NodeLogExprGreater* log_expr_greater = m_allocator.emplace<NodeLogExprGreater>();
-					 log_expr_greater->lhs = m_allocator.emplace<NodeExpr>();
-					 log_expr_greater->lhs->var = term_lhs.value();
-					 consume();
-					 log_expr_greater->rhs = parse_expr().value();
-					 log_expr->var = log_expr_greater;
-					 expr_lhs->var = log_expr;
-				}
-				else if (prec.value() == 1)
-				{
-					NodeLogExpr* log_expr = m_allocator.emplace<NodeLogExpr>();
-					NodeLogExprLesser* log_expr_lesser = m_allocator.emplace<NodeLogExprLesser>();
-					log_expr_lesser->lhs = m_allocator.emplace<NodeExpr>();
-					log_expr_lesser->lhs->var = term_lhs.value();
-					consume();
-					log_expr_lesser->rhs = parse_expr().value();
-					log_expr->var = log_expr_lesser;
-					expr_lhs->var = log_expr;
-				}
-				else if (prec.value() == 2)
-				{
-					NodeLogExpr* log_expr = m_allocator.emplace<NodeLogExpr>();
-					NodeLogExprEqual* log_expr_equal = m_allocator.emplace<NodeLogExprEqual>();
-					log_expr_equal->lhs = m_allocator.emplace<NodeExpr>();
-					log_expr_equal->lhs->var = term_lhs.value();
-					consume();
-					log_expr_equal->rhs = parse_expr().value();
-					log_expr->var = log_expr_equal;
-					expr_lhs->var = log_expr;
-				}
-				else if (prec.value() == 3)
-				{
-					NodeLogExpr* log_expr = m_allocator.emplace<NodeLogExpr>();
-					NodeLogExprNotEqual* log_expr_notequal = m_allocator.emplace<NodeLogExprNotEqual>();
-					log_expr_notequal->lhs = m_allocator.emplace<NodeExpr>();
-					log_expr_notequal->lhs->var = term_lhs.value();
-					consume();
-					log_expr_notequal->rhs = parse_expr().value();
-					log_expr->var = log_expr_notequal;
-					expr_lhs->var = log_expr;
+			curr_tok = peek();
+			if (curr_tok.has_value()) {
+				prec = log_prec(curr_tok->type);
+				if (prec.has_value()) {
+					if (prec.value() == 0)
+					{
+						NodeLogExpr* log_expr = m_allocator.emplace<NodeLogExpr>();
+						NodeLogExprGreater* log_expr_greater = m_allocator.emplace<NodeLogExprGreater>();
+						log_expr_greater->lhs = m_allocator.emplace<NodeExpr>();
+						log_expr_greater->lhs->var = term_lhs.value();
+						consume();
+						log_expr_greater->rhs = parse_expr().value();
+						log_expr->var = log_expr_greater;
+						expr_lhs->var = log_expr;
+					}
+					else if (prec.value() == 1)
+					{
+						NodeLogExpr* log_expr = m_allocator.emplace<NodeLogExpr>();
+						NodeLogExprLesser* log_expr_lesser = m_allocator.emplace<NodeLogExprLesser>();
+						log_expr_lesser->lhs = m_allocator.emplace<NodeExpr>();
+						log_expr_lesser->lhs->var = term_lhs.value();
+						consume();
+						log_expr_lesser->rhs = parse_expr().value();
+						log_expr->var = log_expr_lesser;
+						expr_lhs->var = log_expr;
+					}
+					else if (prec.value() == 2)
+					{
+						NodeLogExpr* log_expr = m_allocator.emplace<NodeLogExpr>();
+						NodeLogExprEqual* log_expr_equal = m_allocator.emplace<NodeLogExprEqual>();
+						log_expr_equal->lhs = m_allocator.emplace<NodeExpr>();
+						log_expr_equal->lhs->var = term_lhs.value();
+						consume();
+						log_expr_equal->rhs = parse_expr().value();
+						log_expr->var = log_expr_equal;
+						expr_lhs->var = log_expr;
+					}
+					else if (prec.value() == 3)
+					{
+						NodeLogExpr* log_expr = m_allocator.emplace<NodeLogExpr>();
+						NodeLogExprNotEqual* log_expr_notequal = m_allocator.emplace<NodeLogExprNotEqual>();
+						log_expr_notequal->lhs = m_allocator.emplace<NodeExpr>();
+						log_expr_notequal->lhs->var = term_lhs.value();
+						consume();
+						log_expr_notequal->rhs = parse_expr().value();
+						log_expr->var = log_expr_notequal;
+						expr_lhs->var = log_expr;
+					}
+					else if (prec.value() == 4)
+					{
+						NodeLogExpr* log_expr = m_allocator.emplace<NodeLogExpr>();
+						NodeLogExprGreaterEqual* log_expr_greater_equal = m_allocator.emplace<NodeLogExprGreaterEqual>();
+						log_expr_greater_equal->lhs = m_allocator.emplace<NodeExpr>();
+						log_expr_greater_equal->lhs->var = term_lhs.value();
+						consume();
+						log_expr_greater_equal->rhs = parse_expr().value();
+						log_expr->var = log_expr_greater_equal;
+						expr_lhs->var = log_expr;
+					}
+					else if (prec.value() == 5)
+					{
+						NodeLogExpr* log_expr = m_allocator.emplace<NodeLogExpr>();
+						NodeLogExprLesserEqual* log_expr_lesser_equal = m_allocator.emplace<NodeLogExprLesserEqual>();
+						log_expr_lesser_equal->lhs = m_allocator.emplace<NodeExpr>();
+						log_expr_lesser_equal->lhs->var = term_lhs.value();
+						consume();
+						log_expr_lesser_equal->rhs = parse_expr().value();
+						log_expr->var = log_expr_lesser_equal;
+						expr_lhs->var = log_expr;
+					}
 				}
 			}
-		}
+
 
 		return expr_lhs;
 	}
-
 	std::optional<NodeScope*> parse_scope()
 	{
 		if (!try_consume(TokenType::open_brek).has_value()) {
@@ -446,12 +489,7 @@ public:
 				NodeWordCharVal* val = std::get<NodeWordCharVal*>(word->var);
 				val->name = stat_eq->variableName;
 			} 
-			if (stat_eq->type == "variable")
-			{
-				NodeTerm* word = std::get<NodeTerm*>(stat_eq->expr->var);
-				NodeTermVar* val = std::get<NodeTermVar*>(word->var);
-				val->eqName = stat_eq->variableName;
-			}
+			
 
 			stat->stat = stat_eq;
 			return stat;
@@ -543,6 +581,42 @@ public:
 			auto stmt = m_allocator.emplace<NodeStat>(stmt_if);
 			return stmt;
 		}
+		else if (peek().has_value() && peek().value().type == TokenType::variable && peek(1).has_value() && peek(1).value().type == TokenType::plus &&
+			peek(2).has_value() && peek(2).value().type == TokenType::plus)
+			{
+				NodeStat* stat = m_allocator.emplace<NodeStat>();
+				NodeStatIncerement* inc = m_allocator.emplace<NodeStatIncerement>();
+				inc->expr = parse_expr().value();
+				consume();
+				consume();
+				consume();
+
+					NodeTerm* word = std::get<NodeTerm*>(inc->expr->var);
+					NodeTermVar* val = std::get<NodeTermVar*>(word->var);
+					inc->variableName  = val->name;
+				
+
+				stat->stat = inc;
+				return stat;
+			}
+		else if (peek().has_value() && peek().value().type == TokenType::variable && peek(1).has_value() && peek(1).value().type == TokenType::minus &&
+			peek(2).has_value() && peek(2).value().type == TokenType::minus)
+			{
+				NodeStat* stat = m_allocator.emplace<NodeStat>();
+				NodeStatDecrement* inc = m_allocator.emplace<NodeStatDecrement>();
+				inc->expr = parse_expr().value();
+				consume();
+				consume();
+				consume();
+
+				NodeTerm* word = std::get<NodeTerm*>(inc->expr->var);
+				NodeTermVar* val = std::get<NodeTermVar*>(word->var);
+				inc->variableName = val->name;
+
+
+				stat->stat = inc;
+				return stat;
+			}
 
 		return {};
 	}

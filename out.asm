@@ -14,15 +14,15 @@ global _start
 _start:
    mov rax,2
    push rax
-   mov rax,4
+   mov rax,3
    push rax
-   mov rax,5
+   mov rax,4
    push rax
     pop rax
     pop rbx
     mov rsi, 1
-    cmp rax, rbx
-    jne carry_set0
+    cmp rbx, rax
+    jc carry_set0
     
     mov rsi, 0
 carry_set0:
@@ -35,13 +35,35 @@ mov rax,rsi
  
    mov rax,3
    push rax
+   push QWORD [rsp + 8]
+
+    pop rax
+    pop rbx
+    add rax, rbx
+   push rax
     add rsp, 0
 label0:
   
    push QWORD [rsp + 0]
 
     pop rax
-    call _printnumberRAX
+   inc rax
+   push rax
+   push QWORD [rsp + 0]
+
+    pop rax
+   inc rax
+   push rax
+   push QWORD [rsp + 0]
+
+    pop rax
+   inc rax
+   push rax
+   push QWORD [rsp + 0]
+
+    pop rax
+   dec rax
+   push rax
    push QWORD [rsp + 0]
 
     pop rdi

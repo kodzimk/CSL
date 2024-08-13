@@ -30,6 +30,10 @@ enum TokenType
 	 lesser,
 	 notequal,
 	 equal,
+	 greaterequal,
+	 lesserequal,
+	 OR,
+	 AND,
 };
 
 inline std::string to_string(const TokenType type)
@@ -91,6 +95,10 @@ inline std::optional<int> bin_prec(const TokenType type)
 inline std::optional<int> log_prec(const TokenType type)
 {
 	switch (type) {
+	case TokenType::AND:
+		return 1;
+	case TokenType::OR:
+		return 0;
 	case TokenType::greater:
 		return 0;
 	case TokenType::lesser:
@@ -99,6 +107,10 @@ inline std::optional<int> log_prec(const TokenType type)
 		return 2;
 	case TokenType::notequal:
 		return 3;
+	case TokenType::greaterequal:
+		return 4;
+	case TokenType::lesserequal:
+		return 5;
 	default:
 		return {};
 	}
@@ -180,15 +192,35 @@ public:
 			}
 			else if (peek().value()[0] == '>')
 			{
-				tokens.push_back({ .type = TokenType::greater });
-				consume();
-				continue;
+				if (peek(1).has_value() && peek(1).value()[0] == '=')
+				{
+					tokens.push_back({ .type = TokenType::greaterequal });
+					consume();
+					consume();
+					continue;
+				}
+				else
+				{
+					tokens.push_back({ .type = TokenType::greater });
+					consume();
+					continue; 
+				}
 			}
 			else if (peek().value()[0] == '<')
 			{
-				tokens.push_back({ .type = TokenType::lesser });
-				consume();
-				continue;
+			    if (peek(1).has_value() && peek(1).value()[0] == '=')
+			    {
+			     	tokens.push_back({ .type = TokenType::lesserequal });
+			     	consume();
+			    	consume();
+			   	    continue;
+			    }
+			    else
+			    {
+			    	tokens.push_back({ .type = TokenType::lesser });
+			   	    consume();
+			   	    continue;
+			    }
 			}
 			else if (peek().value()[0] == '(')
 			{
@@ -224,6 +256,18 @@ public:
 			else if (peek().value()[0] == '*')
 			{
 				tokens.push_back({ .type = TokenType::star });
+				consume();
+				continue;
+			}
+			else if (peek().value()[0] == '&')
+			{
+				tokens.push_back({ .type = TokenType::AND });
+				consume();
+				continue;
+			}
+			else if (peek().value()[0] == '|')
+			{
+				tokens.push_back({ .type = TokenType::OR });
 				consume();
 				continue;
 			}
