@@ -6,8 +6,6 @@
 int main(int argc,char** argv)
 {
 	std::string filename = "main.csl";
-	//std::cout << "Enter file name: ";
-	//std::getline(std::cin, filename);
 
     std::string source;
     {
@@ -35,7 +33,6 @@ int main(int argc,char** argv)
         std::fstream file("out.asm", std::ios::out);
         file << generator.gen_prog();;
     }
-
 
     system("bash");
 	return 0;

@@ -71,14 +71,12 @@ inline std::string to_string(const TokenType type)
 	}
 	assert(false);
 }
-
 struct Token
 {
 	TokenType type;
 	int line;
 	std::optional<std::string> value;
 };
-
 inline std::optional<int> bin_prec(const TokenType type)
 {
 	switch (type) {
@@ -92,7 +90,6 @@ inline std::optional<int> bin_prec(const TokenType type)
 		return {};
 	}
 }
-
 inline std::optional<int> log_prec(const TokenType type)
 {
 	switch (type) {

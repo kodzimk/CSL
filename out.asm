@@ -16,6 +16,49 @@ _start:
    push rax
    mov rax,1
    push rax
+   mov rax,2
+   push rax
+    pop rax
+    pop rbx
+    mov rsi, 1
+    cmp rbx, rax
+    jc carry_set0
+    
+    mov rsi, 0
+carry_set0:
+    
+mov rax,rsi
+   push rax
+   mov rax,2
+   push rax
+   mov rax,1
+   push rax
+    pop rax
+    pop rbx
+    mov rsi, 1
+    cmp rbx, rax
+    jc carry_set1
+    
+    mov rsi, 0
+carry_set1:
+    
+mov rax,rsi
+   push rax
+    pop rax
+    pop rbx
+    mov rsi, 1
+    and rbx, rax
+    jne carry_set2
+    
+    mov rsi, 0
+carry_set2:
+    
+mov rax,rsi
+   push rax
+   push QWORD [rsp + 0]
+
+    pop rax
+    call _printnumberRAX
    push QWORD [rsp + 0]
 
     pop rax

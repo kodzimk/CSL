@@ -211,7 +211,6 @@ public:
 
 	}
 
-
 	std::optional<NodeTerm*> parse_term()
 	{
 		if (auto int_lit = try_consume(TokenType::int_val))
@@ -254,12 +253,6 @@ public:
 		}
 
 		return {};
-	}
-
-	void error_expected(const std::string& msg) const
-	{
-		std::cerr << "[Parse Error] Expected " << msg << " on line " << peek(-1).value().value.value() << std::endl;
-		exit(EXIT_FAILURE);
 	}
 
 	std::optional<NodeExpr*> parse_expr(const int min_prec = 0)
@@ -491,6 +484,7 @@ public:
 
 		return expr_lhs;
 	}
+
 	std::optional<NodeScope*> parse_scope()
 	{
 		if (!try_consume(TokenType::open_brek).has_value()) {
@@ -756,6 +750,11 @@ public:
 	}
 
 private:
+	void error_expected(const std::string& msg) const
+	{
+		std::cerr << "[Parse Error] Expected " << msg << " on line " << peek(-1).value().value.value() << std::endl;
+		exit(EXIT_FAILURE);
+	}
 	Token try_consume_err(const TokenType type)
 	{
 		if (peek().has_value() && peek().value().type == type) {

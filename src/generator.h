@@ -303,7 +303,6 @@ public:
 		std::visit(visitor, expr->var);
 	}
 
-
 	void gen_term(NodeTerm* term)
 	{
 		struct TermVisitor {
@@ -698,18 +697,15 @@ private:
 		m_output << "   push " << reg << '\n';
 		m_stack_size++;
 	}
-
 	void pop(std::string reg)
 	{
 		m_output << "    pop " << reg << '\n';
 		m_stack_size--;
 	}
-
 	void begin_scope()
 	{
 		m_scopes.push_back(m_int_vars.size());
 	}
-
 	void end_scope()
 	{
 		const size_t pop_count = m_int_vars.size() - m_scopes.back();
@@ -717,7 +713,6 @@ private:
 		m_stack_size -= pop_count;
 		m_scopes.pop_back();
 	}
-
 	std::string create_label()
 	{
 		std::stringstream ss;
@@ -725,7 +720,6 @@ private:
 		m_label_count++;
 		return ss.str();
 	}
-
 	void log_expr_or()
 	{
 		for (int i = 0; i < orCount; i++)
@@ -738,7 +732,7 @@ private:
 
 			m_output << "    \n";
 			m_output << "    mov rsi, 0\n";
-			m_output << "carry_set" << std::to_string(carry_count) << ":\n";
+			m_output << "    carry_set" << std::to_string(carry_count) << ":\n";
 			m_output << "    \n";
 
 			m_output << "mov rax,rsi\n";
@@ -748,7 +742,7 @@ private:
 		orCount = 0;
 	}
 
-
+private:
 	size_t m_stack_size = 0;
 	NodeProg prog;
 	std::stringstream m_output;

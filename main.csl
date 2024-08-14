@@ -3,12 +3,7 @@ int main()
   char symbol = 's';
   char s = ' ';
   int a = 2;
-  bool b = 1;
-
-  if(b)
-  {
-    printf(b);
-  }
+  int b = 2 > 1 & 1 > 2;
 
 
   return a;
