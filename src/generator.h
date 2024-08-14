@@ -27,6 +27,9 @@ public:
 	{
 		struct LogVisitor {
 			Generator& gen;
+			void operator()(const NodeLogAnd* log_and)
+			{
+			}
 			void operator()(const NodeLogExprGreater* log_greater)
 			{
 				gen.gen_expr(log_greater->rhs);
@@ -45,6 +48,25 @@ public:
 				gen.m_output << "mov rax,rsi\n";
 				gen.push("rax");
 				gen.carry_count++;
+				if (log_greater->var.has_value())
+				{
+					gen.gen_expr(log_greater->var.value()->lhs);
+
+					gen.pop("rax");
+					gen.pop("rbx");
+					gen.m_output << "    mov rsi, 1\n";
+					gen.m_output << "    and rbx, rax\n";
+					gen.m_output << "    jne carry_set" << std::to_string(gen.carry_count) << "\n";
+
+					gen.m_output << "    \n";
+					gen.m_output << "    mov rsi, 0\n";
+					gen.m_output << "carry_set" << std::to_string(gen.carry_count) << ":\n";
+					gen.m_output << "    \n";
+
+					gen.m_output << "mov rax,rsi\n";
+					gen.push("rax");
+					gen.carry_count++;
+				}
 			}
 			void operator()(const NodeLogExprLesser* log_lesser)
 			{
@@ -64,6 +86,25 @@ public:
 				gen.m_output << "mov rax,rsi\n";
 				gen.push("rax");
 				gen.carry_count++;
+				if (log_lesser->var.has_value())
+				{
+					gen.gen_expr(log_lesser->var.value()->lhs);
+
+					gen.pop("rax");
+					gen.pop("rbx");
+					gen.m_output << "    mov rsi, 1\n";
+					gen.m_output << "    and rbx, rax\n";
+					gen.m_output << "    jne carry_set" << std::to_string(gen.carry_count) << "\n";
+
+					gen.m_output << "    \n";
+					gen.m_output << "    mov rsi, 0\n";
+					gen.m_output << "carry_set" << std::to_string(gen.carry_count) << ":\n";
+					gen.m_output << "    \n";
+
+					gen.m_output << "mov rax,rsi\n";
+					gen.push("rax");
+					gen.carry_count++;
+				}
 			}
 			void operator()(const NodeLogExprEqual* log_equal)
 			{
@@ -83,6 +124,25 @@ public:
 				gen.m_output << "mov rax,rsi\n";
 				gen.push("rax");
 				gen.carry_count++;
+				if (log_equal->var.has_value())
+				{
+					gen.gen_expr(log_equal->var.value()->lhs);
+
+					gen.pop("rax");
+					gen.pop("rbx");
+					gen.m_output << "    mov rsi, 1\n";
+					gen.m_output << "    and rbx, rax\n";
+					gen.m_output << "    jne carry_set" << std::to_string(gen.carry_count) << "\n";
+
+					gen.m_output << "    \n";
+					gen.m_output << "    mov rsi, 0\n";
+					gen.m_output << "carry_set" << std::to_string(gen.carry_count) << ":\n";
+					gen.m_output << "    \n";
+
+					gen.m_output << "mov rax,rsi\n";
+					gen.push("rax");
+					gen.carry_count++;
+				}
 			}
 			void operator()(const NodeLogExprNotEqual* log_not_equal)
 			{
@@ -102,7 +162,28 @@ public:
 				gen.m_output << "mov rax,rsi\n";
 				gen.push("rax");
 				gen.carry_count++;
+				if (log_not_equal->var.has_value())
+				{
+					gen.gen_expr(log_not_equal->var.value()->lhs);
+
+					gen.pop("rax");
+					gen.pop("rbx");
+					gen.m_output << "    mov rsi, 1\n";
+					gen.m_output << "    and rbx, rax\n";
+					gen.m_output << "    jne carry_set" << std::to_string(gen.carry_count) << "\n";
+
+					gen.m_output << "    \n";
+					gen.m_output << "    mov rsi, 0\n";
+					gen.m_output << "carry_set" << std::to_string(gen.carry_count) << ":\n";
+					gen.m_output << "    \n";
+
+					gen.m_output << "mov rax,rsi\n";
+					gen.push("rax");
+					gen.carry_count++;
+				}
+
 			}
+
 			void operator()(const NodeLogExprGreaterEqual* log_greater_equal)
 			{
 				gen.gen_expr(log_greater_equal->rhs);
@@ -121,6 +202,25 @@ public:
 				gen.m_output << "mov rax,rsi\n";
 				gen.push("rax");
 				gen.carry_count++;
+				if (log_greater_equal->var.has_value())
+				{
+					gen.gen_expr(log_greater_equal->var.value()->lhs);
+
+					gen.pop("rax");
+					gen.pop("rbx");
+					gen.m_output << "    mov rsi, 1\n";
+					gen.m_output << "    and rbx, rax\n";
+					gen.m_output << "    jne carry_set" << std::to_string(gen.carry_count) << "\n";
+
+					gen.m_output << "    \n";
+					gen.m_output << "    mov rsi, 0\n";
+					gen.m_output << "carry_set" << std::to_string(gen.carry_count) << ":\n";
+					gen.m_output << "    \n";
+
+					gen.m_output << "mov rax,rsi\n";
+					gen.push("rax");
+					gen.carry_count++;
+				}
 			}
 			void operator()(const NodeLogExprLesserEqual* log_lesser_equal)
 			{
@@ -140,6 +240,25 @@ public:
 				gen.m_output << "mov rax,rsi\n";
 				gen.push("rax");
 				gen.carry_count++;
+				if (log_lesser_equal->var.has_value())
+				{
+					gen.gen_expr(log_lesser_equal->var.value()->lhs);
+
+					gen.pop("rax");
+					gen.pop("rbx");
+					gen.m_output << "    mov rsi, 1\n";
+					gen.m_output << "    and rbx, rax\n";
+					gen.m_output << "    jne carry_set" << std::to_string(gen.carry_count) << "\n";
+
+					gen.m_output << "    \n";
+					gen.m_output << "    mov rsi, 0\n";
+					gen.m_output << "carry_set" << std::to_string(gen.carry_count) << ":\n";
+					gen.m_output << "    \n";
+
+					gen.m_output << "mov rax,rsi\n";
+					gen.push("rax");
+					gen.carry_count++;
+				}
 			}
 		};
 

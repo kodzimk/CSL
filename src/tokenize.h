@@ -95,10 +95,6 @@ inline std::optional<int> bin_prec(const TokenType type)
 inline std::optional<int> log_prec(const TokenType type)
 {
 	switch (type) {
-	case TokenType::AND:
-		return 1;
-	case TokenType::OR:
-		return 0;
 	case TokenType::greater:
 		return 0;
 	case TokenType::lesser:

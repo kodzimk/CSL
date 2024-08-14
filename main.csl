@@ -3,16 +3,12 @@ int main()
   char symbol = 's';
   char s = ' ';
   int a = 2;
-
-  if(4 > 3)
-  {
   a = a + 3;
-  }
 
-  a++;
-  a++;
-  a++;
-  a--;
+  if(6 > 5 & 5 != 4 & 6 < 4)
+  {
+    printf(symbol$n);
+  }
 
 
   return a;

@@ -16,7 +16,15 @@ _start:
    push rax
    mov rax,3
    push rax
-   mov rax,4
+   push QWORD [rsp + 8]
+
+    pop rax
+    pop rbx
+    add rax, rbx
+   push rax
+   mov rax,5
+   push rax
+   mov rax,6
    push rax
     pop rax
     pop rbx
@@ -29,41 +37,77 @@ carry_set0:
     
 mov rax,rsi
    push rax
+   mov rax,4
+   push rax
+   mov rax,5
+   push rax
+    pop rax
+    pop rbx
+    mov rsi, 1
+    cmp rax, rbx
+    jne carry_set1
+    
+    mov rsi, 0
+carry_set1:
+    
+mov rax,rsi
+   push rax
+   mov rax,4
+   push rax
+   mov rax,6
+   push rax
+    pop rax
+    pop rbx
+    mov rsi, 1
+    cmp rax, rbx
+    jc carry_set2
+    
+    mov rsi, 0
+carry_set2:
+    
+mov rax,rsi
+   push rax
+    pop rax
+    pop rbx
+    mov rsi, 1
+    and rbx, rax
+    jne carry_set3
+    
+    mov rsi, 0
+carry_set3:
+    
+mov rax,rsi
+   push rax
+    pop rax
+    pop rbx
+    mov rsi, 1
+    and rbx, rax
+    jne carry_set4
+    
+    mov rsi, 0
+carry_set4:
+    
+mov rax,rsi
+   push rax
     pop rax
     cmp rax,0
     je label0
  
-   mov rax,3
-   push rax
-   push QWORD [rsp + 8]
-
-    pop rax
-    pop rbx
-    add rax, rbx
-   push rax
+    mov edx,1
+    mov ecx,symbol
+    mov ebx,1
+    mov eax,4
+    int 0x80
+    
+    mov edx,newLineLen
+    mov ecx,newLineMsg
+    mov ebx,1
+    mov eax,4
+    int 0x80
+    
     add rsp, 0
 label0:
   
-   push QWORD [rsp + 0]
-
-    pop rax
-   inc rax
-   push rax
-   push QWORD [rsp + 0]
-
-    pop rax
-   inc rax
-   push rax
-   push QWORD [rsp + 0]
-
-    pop rax
-   inc rax
-   push rax
-   push QWORD [rsp + 0]
-
-    pop rax
-   dec rax
-   push rax
    push QWORD [rsp + 0]
 
     pop rdi

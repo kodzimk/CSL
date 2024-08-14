@@ -52,40 +52,53 @@ struct NodeBinExpr {
 	std::variant<NodeBinExprAdd*, NodeBinExprMulti*, NodeBinExprSub*, NodeBinExprDiv*> var;
 };
 
+
+struct NodeLogAnd
+{
+	NodeExpr* lhs;
+};
+
 struct NodeLogExprGreater {
 	NodeExpr* lhs;
 	NodeExpr* rhs;
+	std::optional<NodeLogAnd*> var;
 };
 
 struct NodeLogExprLesser {
 	NodeExpr* lhs;
 	NodeExpr* rhs;
+	std::optional<NodeLogAnd*> var;
 };
 
 struct NodeLogExprEqual {
 	NodeExpr* lhs;
 	NodeExpr* rhs;
+	std::optional<NodeLogAnd*> var;
 };
 
 struct NodeLogExprNotEqual {
 	NodeExpr* lhs;
 	NodeExpr* rhs;
+	std::optional<NodeLogAnd*> var;
 };
 
 struct NodeLogExprGreaterEqual {
 	NodeExpr* lhs;
 	NodeExpr* rhs;
+	std::optional<NodeLogAnd*> var;
 };
 
 struct NodeLogExprLesserEqual {
 	NodeExpr* lhs;
 	NodeExpr* rhs;
+	std::optional<NodeLogAnd*> var;
 };
 
 struct NodeLogExpr
 {
-	std::variant<NodeLogExprGreater*, NodeLogExprLesser*, NodeLogExprEqual*, NodeLogExprNotEqual*,NodeLogExprGreaterEqual*,NodeLogExprLesserEqual*> var;
+	std::variant<NodeLogExprGreater*, NodeLogExprLesser*, NodeLogExprEqual*, NodeLogExprNotEqual*,NodeLogExprGreaterEqual*,NodeLogExprLesserEqual*,NodeLogAnd*> var;
 };
+
 
 struct NodeStatIncerement
 {
@@ -300,6 +313,8 @@ public:
 		std::optional<Token> curr_tok = peek();
 		std::optional<int> prec;
 
+		while (true)
+		{
 			curr_tok = peek();
 			if (curr_tok.has_value()) {
 				prec = log_prec(curr_tok->type);
@@ -312,6 +327,13 @@ public:
 						log_expr_greater->lhs->var = term_lhs.value();
 						consume();
 						log_expr_greater->rhs = parse_expr().value();
+						if (peek().has_value() && peek().value().type == TokenType::AND)
+						{
+							consume();
+							NodeLogAnd* log_and = m_allocator.emplace<NodeLogAnd>();
+							log_and->lhs = parse_expr().value();
+							log_expr_greater->var = log_and;
+						}
 						log_expr->var = log_expr_greater;
 						expr_lhs->var = log_expr;
 					}
@@ -323,6 +345,13 @@ public:
 						log_expr_lesser->lhs->var = term_lhs.value();
 						consume();
 						log_expr_lesser->rhs = parse_expr().value();
+						if (peek().has_value() && peek().value().type == TokenType::AND)
+						{
+							consume();
+							NodeLogAnd* log_and = m_allocator.emplace<NodeLogAnd>();
+							log_and->lhs = parse_expr().value();
+							log_expr_lesser->var = log_and;
+						}
 						log_expr->var = log_expr_lesser;
 						expr_lhs->var = log_expr;
 					}
@@ -334,6 +363,13 @@ public:
 						log_expr_equal->lhs->var = term_lhs.value();
 						consume();
 						log_expr_equal->rhs = parse_expr().value();
+						if (peek().has_value() && peek().value().type == TokenType::AND)
+						{
+							consume();
+							NodeLogAnd* log_and = m_allocator.emplace<NodeLogAnd>();
+							log_and->lhs = parse_expr().value();
+							log_expr_equal->var = log_and;
+						}
 						log_expr->var = log_expr_equal;
 						expr_lhs->var = log_expr;
 					}
@@ -345,6 +381,13 @@ public:
 						log_expr_notequal->lhs->var = term_lhs.value();
 						consume();
 						log_expr_notequal->rhs = parse_expr().value();
+						if (peek().has_value() && peek().value().type == TokenType::AND)
+						{
+							consume();
+							NodeLogAnd* log_and = m_allocator.emplace<NodeLogAnd>();
+							log_and->lhs = parse_expr().value();
+							log_expr_notequal->var = log_and;
+						}
 						log_expr->var = log_expr_notequal;
 						expr_lhs->var = log_expr;
 					}
@@ -356,6 +399,13 @@ public:
 						log_expr_greater_equal->lhs->var = term_lhs.value();
 						consume();
 						log_expr_greater_equal->rhs = parse_expr().value();
+						if (peek().has_value() && peek().value().type == TokenType::AND)
+						{
+							consume();
+							NodeLogAnd* log_and = m_allocator.emplace<NodeLogAnd>();
+							log_and->lhs = parse_expr().value();
+							log_expr_greater_equal->var = log_and;
+						}
 						log_expr->var = log_expr_greater_equal;
 						expr_lhs->var = log_expr;
 					}
@@ -367,11 +417,23 @@ public:
 						log_expr_lesser_equal->lhs->var = term_lhs.value();
 						consume();
 						log_expr_lesser_equal->rhs = parse_expr().value();
+						if (peek().has_value() && peek().value().type == TokenType::AND)
+						{
+							consume();
+							NodeLogAnd* log_and = m_allocator.emplace<NodeLogAnd>();
+							log_and->lhs = parse_expr().value();
+							log_expr_lesser_equal->var = log_and;
+						}
 						log_expr->var = log_expr_lesser_equal;
 						expr_lhs->var = log_expr;
 					}
 				}
+				else
+					break;
 			}
+			else
+				break;
+		}
 
 
 		return expr_lhs;
