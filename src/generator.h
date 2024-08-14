@@ -27,11 +27,15 @@ public:
 	{
 		struct LogVisitor {
 			Generator& gen;
+			void operator()(const NodeLogOr* log_or)
+			{
+			}
 			void operator()(const NodeLogAnd* log_and)
 			{
 			}
 			void operator()(const NodeLogExprGreater* log_greater)
 			{
+				gen.temp_log_expr = nullptr;
 				gen.gen_expr(log_greater->rhs);
 				gen.gen_expr(log_greater->lhs);
 				gen.pop("rax");
@@ -48,10 +52,9 @@ public:
 				gen.m_output << "mov rax,rsi\n";
 				gen.push("rax");
 				gen.carry_count++;
-				if (log_greater->var.has_value())
+				if (log_greater->varAnd.has_value())
 				{
-					gen.gen_expr(log_greater->var.value()->lhs);
-
+					gen.gen_expr(log_greater->varAnd.value()->lhs);
 					gen.pop("rax");
 					gen.pop("rbx");
 					gen.m_output << "    mov rsi, 1\n";
@@ -67,9 +70,15 @@ public:
 					gen.push("rax");
 					gen.carry_count++;
 				}
+				else if (log_greater->varOr.has_value())
+				{
+					gen.temp_log_expr = log_greater->varOr.value()->lhs;
+					gen.orCount++;
+				}
 			}
 			void operator()(const NodeLogExprLesser* log_lesser)
 			{
+				gen.temp_log_expr = nullptr;
 				gen.gen_expr(log_lesser->rhs);
 				gen.gen_expr(log_lesser->lhs);
 				gen.pop("rax");
@@ -86,9 +95,9 @@ public:
 				gen.m_output << "mov rax,rsi\n";
 				gen.push("rax");
 				gen.carry_count++;
-				if (log_lesser->var.has_value())
+				if (log_lesser->varAnd.has_value())
 				{
-					gen.gen_expr(log_lesser->var.value()->lhs);
+					gen.gen_expr(log_lesser->varAnd.value()->lhs);
 
 					gen.pop("rax");
 					gen.pop("rbx");
@@ -105,9 +114,15 @@ public:
 					gen.push("rax");
 					gen.carry_count++;
 				}
+				else if (log_lesser->varOr.has_value())
+				{
+					gen.temp_log_expr = log_lesser->varOr.value()->lhs;
+					gen.orCount++;
+				}
 			}
 			void operator()(const NodeLogExprEqual* log_equal)
 			{
+				gen.temp_log_expr = nullptr;
 				gen.gen_expr(log_equal->rhs);
 				gen.gen_expr(log_equal->lhs);
 				gen.pop("rax");
@@ -124,9 +139,9 @@ public:
 				gen.m_output << "mov rax,rsi\n";
 				gen.push("rax");
 				gen.carry_count++;
-				if (log_equal->var.has_value())
+				if (log_equal->varAnd.has_value())
 				{
-					gen.gen_expr(log_equal->var.value()->lhs);
+					gen.gen_expr(log_equal->varAnd.value()->lhs);
 
 					gen.pop("rax");
 					gen.pop("rbx");
@@ -143,9 +158,15 @@ public:
 					gen.push("rax");
 					gen.carry_count++;
 				}
+				else if (log_equal->varOr.has_value())
+				{
+					gen.temp_log_expr = log_equal->varOr.value()->lhs;
+					gen.orCount++;
+				}
 			}
 			void operator()(const NodeLogExprNotEqual* log_not_equal)
 			{
+				gen.temp_log_expr = nullptr;
 				gen.gen_expr(log_not_equal->rhs);
 				gen.gen_expr(log_not_equal->lhs);
 				gen.pop("rax");
@@ -162,9 +183,9 @@ public:
 				gen.m_output << "mov rax,rsi\n";
 				gen.push("rax");
 				gen.carry_count++;
-				if (log_not_equal->var.has_value())
+				if (log_not_equal->varAnd.has_value())
 				{
-					gen.gen_expr(log_not_equal->var.value()->lhs);
+					gen.gen_expr(log_not_equal->varAnd.value()->lhs);
 
 					gen.pop("rax");
 					gen.pop("rbx");
@@ -181,11 +202,16 @@ public:
 					gen.push("rax");
 					gen.carry_count++;
 				}
+				else if (log_not_equal->varOr.has_value())
+				{
+					gen.temp_log_expr = log_not_equal->varOr.value()->lhs;
+					gen.orCount++;
+				}
 
 			}
-
 			void operator()(const NodeLogExprGreaterEqual* log_greater_equal)
 			{
+				gen.temp_log_expr = nullptr;
 				gen.gen_expr(log_greater_equal->rhs);
 				gen.gen_expr(log_greater_equal->lhs);
 				gen.pop("rax");
@@ -202,9 +228,9 @@ public:
 				gen.m_output << "mov rax,rsi\n";
 				gen.push("rax");
 				gen.carry_count++;
-				if (log_greater_equal->var.has_value())
+				if (log_greater_equal->varAnd.has_value())
 				{
-					gen.gen_expr(log_greater_equal->var.value()->lhs);
+					gen.gen_expr(log_greater_equal->varAnd.value()->lhs);
 
 					gen.pop("rax");
 					gen.pop("rbx");
@@ -221,9 +247,15 @@ public:
 					gen.push("rax");
 					gen.carry_count++;
 				}
+				else if (log_greater_equal->varOr.has_value())
+				{
+					gen.temp_log_expr = log_greater_equal->varOr.value()->lhs;
+					gen.orCount++;
+				}
 			}
 			void operator()(const NodeLogExprLesserEqual* log_lesser_equal)
 			{
+				gen.temp_log_expr = nullptr;
 				gen.gen_expr(log_lesser_equal->rhs);
 				gen.gen_expr(log_lesser_equal->lhs);
 				gen.pop("rax");
@@ -240,9 +272,9 @@ public:
 				gen.m_output << "mov rax,rsi\n";
 				gen.push("rax");
 				gen.carry_count++;
-				if (log_lesser_equal->var.has_value())
+				if (log_lesser_equal->varAnd.has_value())
 				{
-					gen.gen_expr(log_lesser_equal->var.value()->lhs);
+					gen.gen_expr(log_lesser_equal->varAnd.value()->lhs);
 
 					gen.pop("rax");
 					gen.pop("rbx");
@@ -258,6 +290,11 @@ public:
 					gen.m_output << "mov rax,rsi\n";
 					gen.push("rax");
 					gen.carry_count++;
+				}
+				else if (log_lesser_equal->varOr.has_value())
+				{
+					gen.temp_log_expr = log_lesser_equal->varOr.value()->lhs;
+					gen.orCount++;
 				}
 			}
 		};
@@ -334,7 +371,6 @@ public:
 		TermVisitor visitor = { .gen = *this };
 		std::visit(visitor, term->var);
 	}
-
 	void gen_bin_expr(NodeBinExpr* bin_expr)
 	{
 		struct BinExprVisitor {
@@ -384,7 +420,6 @@ public:
 		BinExprVisitor visitor{ .gen = *this };
 		std::visit(visitor, bin_expr->var);
 	}
-
 	void gen_expr(NodeExpr* expr)
 	{
 		struct ExprVisitor {
@@ -405,7 +440,6 @@ public:
 		ExprVisitor visitor = { .gen = *this };
 		std::visit(visitor, expr->var);
 	}
-
 	void gen_scope(const NodeScope* scope)
 	{
 		begin_scope();
@@ -414,7 +448,6 @@ public:
 		}
 		end_scope();
 	}
-
 	void gen_if_pred(const NodeIfPred* pred, const std::string& end_label)
 	{
 		struct PredVisitor {
@@ -542,6 +575,11 @@ public:
 			void operator()(const NodeStatIf* stmt_if) const
 			{
 				gen.gen_expr(stmt_if->expr);
+				while (gen.temp_log_expr != nullptr)
+				{
+					gen.gen_expr(gen.temp_log_expr.value());
+				}
+				gen.log_expr_or();
 				gen.pop("rax");
 				const std::string label = gen.create_label();
 				gen.m_output << "    cmp rax,0\n";
@@ -683,6 +721,28 @@ private:
 		return ss.str();
 	}
 
+	void log_expr_or()
+	{
+		for (int i = 0; i < orCount; i++)
+		{
+			pop("rax");
+			pop("rbx");
+			m_output << "    mov rsi, 1\n";
+			m_output << "    or rax, rbx\n";
+			m_output << "    jne carry_set" << std::to_string(carry_count) << "\n";
+
+			m_output << "    \n";
+			m_output << "    mov rsi, 0\n";
+			m_output << "carry_set" << std::to_string(carry_count) << ":\n";
+			m_output << "    \n";
+
+			m_output << "mov rax,rsi\n";
+			push("rax");
+			carry_count++;
+		}
+		orCount = 0;
+	}
+
 
 	size_t m_stack_size = 0;
 	NodeProg prog;
@@ -695,7 +755,9 @@ private:
 	std::unordered_map<std::string, std::string> m_types;
 
 	std::vector<size_t> m_scopes{};
+	std::optional<NodeExpr*> temp_log_expr;
 
 	int m_label_count = 0;
 	int carry_count = 0;
+	int orCount = 0;
 };

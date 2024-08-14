@@ -58,45 +58,56 @@ struct NodeLogAnd
 	NodeExpr* lhs;
 };
 
+struct NodeLogOr
+{
+	NodeExpr* lhs;
+};
+
 struct NodeLogExprGreater {
 	NodeExpr* lhs;
 	NodeExpr* rhs;
-	std::optional<NodeLogAnd*> var;
+	std::optional<NodeLogAnd*> varAnd;
+	std::optional<NodeLogOr*> varOr;
 };
 
 struct NodeLogExprLesser {
 	NodeExpr* lhs;
 	NodeExpr* rhs;
-	std::optional<NodeLogAnd*> var;
+	std::optional<NodeLogAnd*> varAnd;
+	std::optional<NodeLogOr*> varOr;
 };
 
 struct NodeLogExprEqual {
 	NodeExpr* lhs;
 	NodeExpr* rhs;
-	std::optional<NodeLogAnd*> var;
+	std::optional<NodeLogAnd*> varAnd;
+	std::optional<NodeLogOr*> varOr;
 };
 
 struct NodeLogExprNotEqual {
 	NodeExpr* lhs;
 	NodeExpr* rhs;
-	std::optional<NodeLogAnd*> var;
+	std::optional<NodeLogAnd*> varAnd;
+	std::optional<NodeLogOr*> varOr;
 };
 
 struct NodeLogExprGreaterEqual {
 	NodeExpr* lhs;
 	NodeExpr* rhs;
-	std::optional<NodeLogAnd*> var;
+	std::optional<NodeLogAnd*> varAnd;
+	std::optional<NodeLogOr*> varOr;
 };
 
 struct NodeLogExprLesserEqual {
 	NodeExpr* lhs;
 	NodeExpr* rhs;
-	std::optional<NodeLogAnd*> var;
+	std::optional<NodeLogAnd*> varAnd;
+	std::optional<NodeLogOr*> varOr;
 };
 
 struct NodeLogExpr
 {
-	std::variant<NodeLogExprGreater*, NodeLogExprLesser*, NodeLogExprEqual*, NodeLogExprNotEqual*,NodeLogExprGreaterEqual*,NodeLogExprLesserEqual*,NodeLogAnd*> var;
+	std::variant<NodeLogExprGreater*, NodeLogExprLesser*, NodeLogExprEqual*, NodeLogExprNotEqual*,NodeLogExprGreaterEqual*,NodeLogExprLesserEqual*,NodeLogAnd*,NodeLogOr*> var;
 };
 
 
@@ -304,7 +315,7 @@ public:
 					expr->var = div;
 				}
 				else {
-					assert(false); // Unreachable;
+					assert(false);
 				}
 				expr_lhs->var = expr;
 			}
@@ -332,7 +343,14 @@ public:
 							consume();
 							NodeLogAnd* log_and = m_allocator.emplace<NodeLogAnd>();
 							log_and->lhs = parse_expr().value();
-							log_expr_greater->var = log_and;
+							log_expr_greater->varAnd = log_and;
+						}
+						else if (peek().has_value() && peek().value().type == TokenType::OR)
+						{
+							consume();
+							NodeLogOr* log_or = m_allocator.emplace<NodeLogOr>();
+							log_or->lhs = parse_expr().value();
+							log_expr_greater->varOr = log_or;
 						}
 						log_expr->var = log_expr_greater;
 						expr_lhs->var = log_expr;
@@ -350,7 +368,14 @@ public:
 							consume();
 							NodeLogAnd* log_and = m_allocator.emplace<NodeLogAnd>();
 							log_and->lhs = parse_expr().value();
-							log_expr_lesser->var = log_and;
+							log_expr_lesser->varAnd = log_and;
+						}
+						else if (peek().has_value() && peek().value().type == TokenType::OR)
+						{
+							consume();
+							NodeLogOr* log_or = m_allocator.emplace<NodeLogOr>();
+							log_or->lhs = parse_expr().value();
+							log_expr_lesser->varOr = log_or;
 						}
 						log_expr->var = log_expr_lesser;
 						expr_lhs->var = log_expr;
@@ -368,7 +393,14 @@ public:
 							consume();
 							NodeLogAnd* log_and = m_allocator.emplace<NodeLogAnd>();
 							log_and->lhs = parse_expr().value();
-							log_expr_equal->var = log_and;
+							log_expr_equal->varAnd = log_and;
+						}
+						else if (peek().has_value() && peek().value().type == TokenType::OR)
+						{
+							consume();
+							NodeLogOr* log_or = m_allocator.emplace<NodeLogOr>();
+							log_or->lhs = parse_expr().value();
+							log_expr_equal->varOr = log_or;
 						}
 						log_expr->var = log_expr_equal;
 						expr_lhs->var = log_expr;
@@ -386,7 +418,14 @@ public:
 							consume();
 							NodeLogAnd* log_and = m_allocator.emplace<NodeLogAnd>();
 							log_and->lhs = parse_expr().value();
-							log_expr_notequal->var = log_and;
+							log_expr_notequal->varAnd = log_and;
+						}
+						else if (peek().has_value() && peek().value().type == TokenType::OR)
+						{
+							consume();
+							NodeLogOr* log_or = m_allocator.emplace<NodeLogOr>();
+							log_or->lhs = parse_expr().value();
+							log_expr_notequal->varOr = log_or;
 						}
 						log_expr->var = log_expr_notequal;
 						expr_lhs->var = log_expr;
@@ -404,7 +443,14 @@ public:
 							consume();
 							NodeLogAnd* log_and = m_allocator.emplace<NodeLogAnd>();
 							log_and->lhs = parse_expr().value();
-							log_expr_greater_equal->var = log_and;
+							log_expr_greater_equal->varAnd = log_and;
+						}
+						else if (peek().has_value() && peek().value().type == TokenType::OR)
+						{
+							consume();
+							NodeLogOr* log_or = m_allocator.emplace<NodeLogOr>();
+							log_or->lhs = parse_expr().value();
+							log_expr_greater_equal->varOr = log_or;
 						}
 						log_expr->var = log_expr_greater_equal;
 						expr_lhs->var = log_expr;
@@ -422,7 +468,14 @@ public:
 							consume();
 							NodeLogAnd* log_and = m_allocator.emplace<NodeLogAnd>();
 							log_and->lhs = parse_expr().value();
-							log_expr_lesser_equal->var = log_and;
+							log_expr_lesser_equal->varAnd = log_and;
+						}
+						else if (peek().has_value() && peek().value().type == TokenType::OR)
+						{
+							consume();
+							NodeLogOr* log_or = m_allocator.emplace<NodeLogOr>();
+							log_or->lhs = parse_expr().value();
+							log_expr_lesser_equal->varOr = log_or;
 						}
 						log_expr->var = log_expr_lesser_equal;
 						expr_lhs->var = log_expr;
