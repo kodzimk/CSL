@@ -34,6 +34,7 @@ enum TokenType
 	 lesserequal,
 	 OR,
 	 AND,
+	 boolean,
 };
 
 inline std::string to_string(const TokenType type)
@@ -173,6 +174,11 @@ public:
 				else if (str == "printf")
 				{
 					tokens.push_back({ .type = TokenType::print });
+					str.clear();
+				}
+				else if (str == "bool")
+				{
+					tokens.push_back({ .type = TokenType::boolean });
 					str.clear();
 				}
 				else

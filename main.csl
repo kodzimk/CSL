@@ -3,11 +3,11 @@ int main()
   char symbol = 's';
   char s = ' ';
   int a = 2;
-  a = a + 3;
+  bool b = 1;
 
-  if(6 > 6 & 4 > 5 | 1 != 1 | 1 > 0 & 1 > 0 | 0 == 1)
+  if(b)
   {
-    printf(symbol$n);
+    printf(b);
   }
 
 

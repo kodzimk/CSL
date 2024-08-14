@@ -457,6 +457,11 @@ public:
 			void operator()(const NodeIfPredElif* elif) const
 			{
 				gen.gen_expr(elif->expr);
+				while (gen.temp_log_expr != nullptr)
+				{
+					gen.gen_expr(gen.temp_log_expr.value());
+				}
+				gen.log_expr_or();
 				gen.pop("rax");
 				const std::string label = gen.create_label();
 				gen.m_output << "    cmp rax,0\n";
@@ -755,7 +760,7 @@ private:
 	std::unordered_map<std::string, std::string> m_types;
 
 	std::vector<size_t> m_scopes{};
-	std::optional<NodeExpr*> temp_log_expr;
+	std::optional<NodeExpr*> temp_log_expr = nullptr;
 
 	int m_label_count = 0;
 	int carry_count = 0;

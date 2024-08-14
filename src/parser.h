@@ -556,7 +556,7 @@ public:
 			stat->stat = stat_exit;
 			return stat;
 		}
-		else if (peek().has_value() && peek().value().type == TokenType::integer && peek(1).has_value() && peek(1).value().type == TokenType::variable &&
+		else if (peek().has_value() && (peek().value().type == TokenType::integer || peek().value().type == TokenType::boolean) && peek(1).has_value() && peek(1).value().type == TokenType::variable &&
 			peek(2).has_value() && peek(2).value().type == TokenType::eq)
 		{
 			consume();
