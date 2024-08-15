@@ -5,30 +5,20 @@ int main()
   int a = 2;
   int b = 3;
 
-  if(2 > 1 & 1 < 1 | 1 == 1 & 1 <= 2)
+  if(2 > 1 & 1 < 1 | 0 == 1 & 1 <= 2)
   {
     b = b + 2;
-    if(1 > 2)
-    {
-      printf(b);
-    }
-    elseif(0 == 1)
-    {
-     b++;
-    }
-    else
-    {
-     a++;
-    }
+  
   }
-  elseif(2 > 2)
+  else if(2 > 2)
   {
    b++;
   }
   else
   {
-   a++;
+   a = a * 2;
   }
+
 
   printf(b);
 

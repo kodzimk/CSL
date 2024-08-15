@@ -141,15 +141,27 @@ public:
 					tokens.push_back({ .type = TokenType::integer});
 					str.clear();
 				}
-				else if (str == "elseif")
-				{
-					tokens.push_back({ .type = TokenType::elseifscope });
-					str.clear();
-				}
+
 				else if (str == "else")
 				{
-					tokens.push_back({ .type = TokenType::elsescope });
-					str.clear();
+					   str.clear();
+						int temp = m_index;
+						while (peek().has_value() && peek().value()[0] == ' ')
+							consume();
+						while (peek().has_value() && isalpha(peek().value()[0]))
+						{
+							str += consume();
+						}
+						if (str == "if")
+						{
+							tokens.push_back({ .type = TokenType::elseifscope });
+							str.clear();
+						}
+						else
+						{
+							tokens.push_back({ .type = TokenType::elsescope });
+							str.clear();
+						}
 				}
 				else if (str == "if")
 				{

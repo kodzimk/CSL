@@ -57,7 +57,7 @@ carry_set2:
     
 mov rax,rsi
    push rax
-   mov rax,1
+   mov rax,0
    push rax
    mov rax,1
    push rax
@@ -113,15 +113,9 @@ mov rax,rsi
     cmp rax,0
     je label0
  
+    jmp label1
+label0:
    mov rax,2
-   push rax
-   push QWORD [rsp + 8]
-
-    pop rax
-    pop rbx
-    add rax, rbx
-   push rax
-   mov rax,1
    push rax
    mov rax,2
    push rax
@@ -138,43 +132,22 @@ mov rax,rsi
    push rax
     pop rax
     cmp rax,0
-    je label1
+    je label2
  
-    jmp label2
-label1:
-   mov rax,0
+    jmp label3
+label2:
+   mov rax,2
    push rax
-   mov rax,1
-   push rax
-    pop rbx
-    pop rax
-    mov rsi, 1
-    cmp rax, rbx
-    je carry_set8
-    
-    mov rsi, 0
-carry_set8:
-    
-mov rax,rsi
-   push rax
-    pop rax
-    cmp rax,0
-    je label3
- 
-    jmp label4
-label3:
    push QWORD [rsp + 16]
 
     pop rax
-   inc rax
+    pop rbx
+    mul rbx
    push rax
     add rsp, 0
-label4:
+label3:
   
-label2:
-  
-    add rsp, 0
-label0:
+label1:
   
    push QWORD [rsp + 8]
 
