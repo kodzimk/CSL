@@ -36,7 +36,6 @@ enum TokenType
 	 AND,
 	 boolean,
 };
-
 inline std::string to_string(const TokenType type)
 {
 	switch (type) {
@@ -118,7 +117,6 @@ public:
 	{
 
 	}
-
 	std::vector<Token> tokenazetion()
 	{
 		std::vector<Token> tokens;
@@ -380,12 +378,11 @@ private:
 		res += filename.at(m_index + offset);
 		return res;
 	}
-
 	char consume()
 	{
 		return filename.at(m_index++);
 	}
-
+private:
 	std::string filename;
 	size_t m_index = 0;
 };

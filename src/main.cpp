@@ -31,7 +31,7 @@ int main(int argc,char** argv)
     {
         Generator generator(prog.value(),parser.m_vars);
         std::fstream file("out.asm", std::ios::out);
-        file << generator.gen_prog();;
+        file << generator.gen_prog();
     }
 
     system("bash");

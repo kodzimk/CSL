@@ -97,7 +97,6 @@ struct NodeLogExprGreaterEqual {
 	std::optional<NodeLogAnd*> varAnd;
 	std::optional<NodeLogOr*> varOr;
 };
-
 struct NodeLogExprLesserEqual {
 	NodeExpr* lhs;
 	NodeExpr* rhs;
@@ -254,7 +253,6 @@ public:
 
 		return {};
 	}
-
 	std::optional<NodeExpr*> parse_expr(const int min_prec = 0)
 	{
 		
@@ -329,6 +327,7 @@ public:
 						NodeLogExprGreater* log_expr_greater = m_allocator.emplace<NodeLogExprGreater>();
 						log_expr_greater->lhs = m_allocator.emplace<NodeExpr>();
 						log_expr_greater->lhs->var = term_lhs.value();
+
 						consume();
 						log_expr_greater->rhs = parse_expr().value();
 						if (peek().has_value() && peek().value().type == TokenType::AND)
@@ -484,7 +483,6 @@ public:
 
 		return expr_lhs;
 	}
-
 	std::optional<NodeScope*> parse_scope()
 	{
 		if (!try_consume(TokenType::open_brek).has_value()) {
@@ -497,7 +495,6 @@ public:
 		try_consume(TokenType::close_brek, "Expected `}`");
 		return scope;
 	}
-
 	std::optional<NodeIfPred*> parse_if_pred()
 	{
 		if (try_consume(TokenType::elseifscope)) {
@@ -536,7 +533,6 @@ public:
 		}
 		return {};
 	}
-
 	std::optional<NodeStat*> parse_stat()
 	{
 		if (peek().has_value() && peek().value().type == TokenType::ret && peek(1).has_value() && 
@@ -729,7 +725,6 @@ public:
 
 		return {};
 	}
-
 	std::optional<NodeProg> parse_prog()
 	{
 		NodeProg prog;
@@ -763,7 +758,6 @@ private:
 		error_expected(to_string(type));
 		return {};
 	}
-
 	[[nodiscard]] std::optional<Token> peek(size_t offset = 0) const
 	{
 		if (m_index + offset >= m_tokens.size()) {
@@ -771,7 +765,6 @@ private:
 		}
 		return m_tokens.at(m_index + offset);
 	}
-
 	Token try_consume(const TokenType type, const std::string& err_msg)
 	{
 		if (peek().has_value() && peek().value().type == type) {
@@ -780,7 +773,6 @@ private:
 		std::cerr << err_msg << std::endl;
 		exit(EXIT_FAILURE);
 	}
-
 	std::optional<Token> try_consume(const TokenType type)
 	{
 		if (peek().has_value() && peek().value().type == type) {
@@ -788,12 +780,11 @@ private:
 		}
 		return {};
 	}
-
 	Token consume()
 	{
 		return m_tokens.at(m_index++);
 	}
-
+private:
 	size_t m_index = 0;
 	std::vector<Token> m_tokens;
 	ArenaAllocator m_allocator;

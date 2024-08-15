@@ -36,10 +36,14 @@ public:
 			void operator()(const NodeLogExprGreater* log_greater)
 			{
 				gen.temp_log_expr = nullptr;
-				gen.gen_expr(log_greater->rhs);
 				gen.gen_expr(log_greater->lhs);
-				gen.pop("rax");
+				if (gen.if_stat)
+				{
+					gen.if_expr.push_back(TokenType::greater);
+				}
+				gen.gen_expr(log_greater->rhs);
 				gen.pop("rbx");
+				gen.pop("rax");
 				gen.m_output << "    mov rsi, 1\n";
 				gen.m_output << "    cmp rbx, rax\n";
 				gen.m_output << "    jc carry_set" << std::to_string(gen.carry_count) << "\n";
@@ -54,6 +58,11 @@ public:
 				gen.carry_count++;
 				if (log_greater->varAnd.has_value())
 				{
+					if (gen.if_stat)
+					{
+						gen.if_expr.push_back(TokenType::AND);
+					}
+
 					gen.gen_expr(log_greater->varAnd.value()->lhs);
 					gen.pop("rax");
 					gen.pop("rbx");
@@ -72,6 +81,10 @@ public:
 				}
 				else if (log_greater->varOr.has_value())
 				{
+					if (gen.if_stat)
+					{
+						gen.if_expr.push_back(TokenType::OR);
+					}
 					gen.temp_log_expr = log_greater->varOr.value()->lhs;
 					gen.orCount++;
 				}
@@ -302,13 +315,16 @@ public:
 		LogVisitor visitor = { .gen = *this };
 		std::visit(visitor, expr->var);
 	}
-
 	void gen_term(NodeTerm* term)
 	{
 		struct TermVisitor {
 			Generator& gen;
 			void operator()(const NodeTermIntVal* int_val)
 			{
+				if (gen.if_stat)
+				{
+					gen.if_expr.push_back(stoi(int_val->value.value()));
+				}
 				gen.m_output << "   mov rax," << int_val->value.value() << '\n';
 				gen.push("rax");
 			}
@@ -578,19 +594,27 @@ public:
 			}
 			void operator()(const NodeStatIf* stmt_if) const
 			{
+				gen.if_stat = true;
 				gen.gen_expr(stmt_if->expr);
 				while (gen.temp_log_expr != nullptr)
 				{
 					gen.gen_expr(gen.temp_log_expr.value());
 				}
+				gen.if_stat = false;
 				gen.log_expr_or();
+				gen.m_values.clear();
 				gen.pop("rax");
 				const std::string label = gen.create_label();
 				gen.m_output << "    cmp rax,0\n";
 				gen.m_output << "    je " << label << "\n";
 			
 				gen.m_output << " \n";
-				gen.gen_scope(stmt_if->scope);
+				gen.parse_log_expr();
+				gen.log_expr_or();
+				if (gen.m_values[0] == 1)
+				{
+					gen.gen_scope(stmt_if->scope);
+				}
 				if (stmt_if->pred.has_value()) {
 					const std::string end_label = gen.create_label();
 					gen.m_output << "    jmp " << end_label << "\n";
@@ -690,7 +714,6 @@ public:
 		output += m_functions.str();
 		return output;
 	}
-
 private:
 	void push(std::string reg)
 	{
@@ -739,10 +762,91 @@ private:
 			push("rax");
 			carry_count++;
 		}
+		auto it = find(m_values.begin(), m_values.end(), 1);
+		if (it != m_values.end())
+		{
+			m_values.clear();
+			m_values.push_back(1);
+		}
+		else 
+		{
+			m_values.clear();
+			m_values.push_back(0);
+		}
 		orCount = 0;
 	}
+	void parse_log_expr()
+	{
+		TokenType andOr = TokenType::integer;
+		for (int i = 0; i < if_expr.size() - 2; i++)
+		{
+			if (auto lhs = std::get_if<int>(&if_expr[i]))
+			{
+				i++;
+				if (auto log = std::get_if<TokenType>(&if_expr[i]))
+				{
+					if (log_prec(*log).has_value())
+					{
+						i++;
+						if (auto rhs = std::get_if<int>(&if_expr[i]))
+						{
+							i++;
+							if (*lhs > *rhs)
+								m_values.push_back(1);
+							else
+								m_values.push_back(0);
+						}
+					}
+					else
+					{
+						std::cerr << "Invalid expr!]\n";
+						exit(EXIT_FAILURE);
+					}
+				}
+				else
+				{
+					std::cerr << "Invalid expr!]\n";
+					exit(EXIT_FAILURE);
+				}
+			}
+			else
+			{
+				std::cerr << "Invalid expr!]\n";
+				exit(EXIT_FAILURE);
+			}
 
+			if (m_values.size() > 1 && andOr == TokenType::AND)
+			{
+				if (m_values[m_values.size() - 1] == 1 && m_values[m_values.size() - 2] == 1)
+				{
+					m_values.erase(m_values.end() - 2, m_values.end() - 1);
+					m_values.push_back(1);
+				}
+			}
+
+			if (i < if_expr.size())
+			{
+				if (auto log = std::get_if<TokenType>(&if_expr[i]))
+				{
+					if (*log == TokenType::AND || *log == TokenType::OR)
+						andOr = *log;
+					else
+					{
+						std::cerr << "Invalid expr!]\n";
+						exit(EXIT_FAILURE);
+					}
+
+					if (andOr == TokenType::OR)
+					{
+						orCount++;
+					}
+				}
+			}
+		}
+	}
 private:
+	std::vector<std::variant<int, TokenType>> if_expr;
+    std::vector<int> m_values;
 	size_t m_stack_size = 0;
 	NodeProg prog;
 	std::stringstream m_output;
@@ -759,4 +863,5 @@ private:
 	int m_label_count = 0;
 	int carry_count = 0;
 	int orCount = 0;
+	bool if_stat = false;
 };

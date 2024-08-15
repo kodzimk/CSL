@@ -14,12 +14,14 @@ global _start
 _start:
    mov rax,2
    push rax
-   mov rax,1
+   mov rax,3
    push rax
    mov rax,2
    push rax
-    pop rax
+   mov rax,1
+   push rax
     pop rbx
+    pop rax
     mov rsi, 1
     cmp rbx, rax
     jc carry_set0
@@ -33,8 +35,8 @@ mov rax,rsi
    push rax
    mov rax,1
    push rax
-    pop rax
     pop rbx
+    pop rax
     mov rsi, 1
     cmp rbx, rax
     jc carry_set1
@@ -55,16 +57,81 @@ carry_set2:
     
 mov rax,rsi
    push rax
-   push QWORD [rsp + 0]
-
+   mov rax,1
+   push rax
+   mov rax,1
+   push rax
+    pop rbx
     pop rax
-    call _printnumberRAX
-   push QWORD [rsp + 0]
-
+    mov rsi, 1
+    cmp rbx, rax
+    jc carry_set3
+    
+    mov rsi, 0
+carry_set3:
+    
+mov rax,rsi
+   push rax
+   mov rax,1
+   push rax
+   mov rax,2
+   push rax
+    pop rbx
+    pop rax
+    mov rsi, 1
+    cmp rbx, rax
+    jc carry_set4
+    
+    mov rsi, 0
+carry_set4:
+    
+mov rax,rsi
+   push rax
+    pop rax
+    pop rbx
+    mov rsi, 1
+    and rbx, rax
+    jne carry_set5
+    
+    mov rsi, 0
+carry_set5:
+    
+mov rax,rsi
+   push rax
+    pop rax
+    pop rbx
+    mov rsi, 1
+    or rax, rbx
+    jne carry_set6
+    
+    mov rsi, 0
+    carry_set6:
+    
+mov rax,rsi
+   push rax
     pop rax
     cmp rax,0
     je label0
  
+    pop rax
+    pop rbx
+    mov rsi, 1
+    or rax, rbx
+    jne carry_set7
+    
+    mov rsi, 0
+    carry_set7:
+    
+mov rax,rsi
+   push rax
+   mov rax,2
+   push rax
+   push QWORD [rsp + 0]
+
+    pop rax
+    pop rbx
+    add rax, rbx
+   push rax
    push QWORD [rsp + 0]
 
     pop rax
@@ -72,6 +139,10 @@ mov rax,rsi
     add rsp, 0
 label0:
   
+   push QWORD [rsp + 0]
+
+    pop rax
+    call _printnumberRAX
    push QWORD [rsp + 8]
 
     pop rdi
