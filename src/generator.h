@@ -92,10 +92,14 @@ public:
 			void operator()(const NodeLogExprLesser* log_lesser)
 			{
 				gen.temp_log_expr = nullptr;
-				gen.gen_expr(log_lesser->rhs);
 				gen.gen_expr(log_lesser->lhs);
-				gen.pop("rax");
+				if (gen.if_stat)
+				{
+					gen.if_expr.push_back(TokenType::lesser);
+				}
+				gen.gen_expr(log_lesser->rhs);
 				gen.pop("rbx");
+				gen.pop("rax");
 				gen.m_output << "    mov rsi, 1\n";
 				gen.m_output << "    cmp rax, rbx\n";
 				gen.m_output << "    jc carry_set" << std::to_string(gen.carry_count) << "\n";
@@ -110,6 +114,10 @@ public:
 				gen.carry_count++;
 				if (log_lesser->varAnd.has_value())
 				{
+					if (gen.if_stat)
+					{
+						gen.if_expr.push_back(TokenType::AND);
+					}
 					gen.gen_expr(log_lesser->varAnd.value()->lhs);
 
 					gen.pop("rax");
@@ -129,6 +137,10 @@ public:
 				}
 				else if (log_lesser->varOr.has_value())
 				{
+					if (gen.if_stat)
+					{
+						gen.if_expr.push_back(TokenType::OR);
+					}
 					gen.temp_log_expr = log_lesser->varOr.value()->lhs;
 					gen.orCount++;
 				}
@@ -136,10 +148,14 @@ public:
 			void operator()(const NodeLogExprEqual* log_equal)
 			{
 				gen.temp_log_expr = nullptr;
-				gen.gen_expr(log_equal->rhs);
 				gen.gen_expr(log_equal->lhs);
-				gen.pop("rax");
+				if (gen.if_stat)
+				{
+					gen.if_expr.push_back(TokenType::equal);
+				}
+				gen.gen_expr(log_equal->rhs);
 				gen.pop("rbx");
+				gen.pop("rax");
 				gen.m_output << "    mov rsi, 1\n";
 				gen.m_output << "    cmp rax, rbx\n";
 				gen.m_output << "    je carry_set" << std::to_string(gen.carry_count) << "\n";
@@ -154,6 +170,10 @@ public:
 				gen.carry_count++;
 				if (log_equal->varAnd.has_value())
 				{
+					if (gen.if_stat)
+					{
+						gen.if_expr.push_back(TokenType::AND);
+					}
 					gen.gen_expr(log_equal->varAnd.value()->lhs);
 
 					gen.pop("rax");
@@ -173,6 +193,10 @@ public:
 				}
 				else if (log_equal->varOr.has_value())
 				{
+					if (gen.if_stat)
+					{
+						gen.if_expr.push_back(TokenType::OR);
+					}
 					gen.temp_log_expr = log_equal->varOr.value()->lhs;
 					gen.orCount++;
 				}
@@ -180,10 +204,14 @@ public:
 			void operator()(const NodeLogExprNotEqual* log_not_equal)
 			{
 				gen.temp_log_expr = nullptr;
-				gen.gen_expr(log_not_equal->rhs);
 				gen.gen_expr(log_not_equal->lhs);
-				gen.pop("rax");
+				if (gen.if_stat)
+				{
+					gen.if_expr.push_back(TokenType::notequal);
+				}
+				gen.gen_expr(log_not_equal->rhs);
 				gen.pop("rbx");
+				gen.pop("rax");
 				gen.m_output << "    mov rsi, 1\n";
 				gen.m_output << "    cmp rax, rbx\n";
 				gen.m_output << "    jne carry_set" << std::to_string(gen.carry_count) << "\n";
@@ -198,6 +226,10 @@ public:
 				gen.carry_count++;
 				if (log_not_equal->varAnd.has_value())
 				{
+					if (gen.if_stat)
+					{
+						gen.if_expr.push_back(TokenType::AND);
+					}
 					gen.gen_expr(log_not_equal->varAnd.value()->lhs);
 
 					gen.pop("rax");
@@ -217,6 +249,10 @@ public:
 				}
 				else if (log_not_equal->varOr.has_value())
 				{
+					if (gen.if_stat)
+					{
+						gen.if_expr.push_back(TokenType::OR);
+					}
 					gen.temp_log_expr = log_not_equal->varOr.value()->lhs;
 					gen.orCount++;
 				}
@@ -225,10 +261,14 @@ public:
 			void operator()(const NodeLogExprGreaterEqual* log_greater_equal)
 			{
 				gen.temp_log_expr = nullptr;
-				gen.gen_expr(log_greater_equal->rhs);
 				gen.gen_expr(log_greater_equal->lhs);
-				gen.pop("rax");
+				if (gen.if_stat)
+				{
+					gen.if_expr.push_back(TokenType::greaterequal);
+				}
+				gen.gen_expr(log_greater_equal->rhs);
 				gen.pop("rbx");
+				gen.pop("rax");
 				gen.m_output << "    mov rsi, 1\n";
 				gen.m_output << "    cmp rax, rbx\n";
 				gen.m_output << "    jge carry_set" << std::to_string(gen.carry_count) << "\n";
@@ -243,6 +283,10 @@ public:
 				gen.carry_count++;
 				if (log_greater_equal->varAnd.has_value())
 				{
+					if (gen.if_stat)
+					{
+						gen.if_expr.push_back(TokenType::AND);
+					}
 					gen.gen_expr(log_greater_equal->varAnd.value()->lhs);
 
 					gen.pop("rax");
@@ -262,6 +306,10 @@ public:
 				}
 				else if (log_greater_equal->varOr.has_value())
 				{
+					if (gen.if_stat)
+					{
+						gen.if_expr.push_back(TokenType::OR);
+					}
 					gen.temp_log_expr = log_greater_equal->varOr.value()->lhs;
 					gen.orCount++;
 				}
@@ -269,10 +317,14 @@ public:
 			void operator()(const NodeLogExprLesserEqual* log_lesser_equal)
 			{
 				gen.temp_log_expr = nullptr;
-				gen.gen_expr(log_lesser_equal->rhs);
 				gen.gen_expr(log_lesser_equal->lhs);
-				gen.pop("rax");
+				if (gen.if_stat)
+				{
+					gen.if_expr.push_back(TokenType::lesserequal);
+				}
+				gen.gen_expr(log_lesser_equal->rhs);
 				gen.pop("rbx");
+				gen.pop("rax");
 				gen.m_output << "    mov rsi, 1\n";
 				gen.m_output << "    cmp rbx, rax\n";
 				gen.m_output << "    jge carry_set" << std::to_string(gen.carry_count) << "\n";
@@ -287,6 +339,10 @@ public:
 				gen.carry_count++;
 				if (log_lesser_equal->varAnd.has_value())
 				{
+					if (gen.if_stat)
+					{
+						gen.if_expr.push_back(TokenType::AND);
+					}
 					gen.gen_expr(log_lesser_equal->varAnd.value()->lhs);
 
 					gen.pop("rax");
@@ -306,6 +362,10 @@ public:
 				}
 				else if (log_lesser_equal->varOr.has_value())
 				{
+					if (gen.if_stat)
+					{
+						gen.if_expr.push_back(TokenType::OR);
+					}
 					gen.temp_log_expr = log_lesser_equal->varOr.value()->lhs;
 					gen.orCount++;
 				}
@@ -471,11 +531,13 @@ public:
 
 			void operator()(const NodeIfPredElif* elif) const
 			{
+				gen.if_stat = true;
 				gen.gen_expr(elif->expr);
 				while (gen.temp_log_expr != nullptr)
 				{
 					gen.gen_expr(gen.temp_log_expr.value());
 				}
+				gen.if_stat = false;
 				gen.log_expr_or();
 				gen.pop("rax");
 				const std::string label = gen.create_label();
@@ -483,8 +545,15 @@ public:
 				gen.m_output << "    je " << label << "\n";
 
 				gen.m_output << " \n";
-				gen.gen_scope(elif->scope);
-				if (elif->pred.has_value()) {
+				gen.parse_log_expr();
+				if (gen.m_values[0] == 1)
+				{
+					gen.m_values.clear();
+					gen.m_output << label << ":\n";
+					gen.gen_scope(elif->scope);
+				}
+				else if (elif->pred.has_value()) {
+					gen.m_values.clear();
 					const std::string end_label = gen.create_label();
 					gen.m_output << "    jmp " << end_label << "\n";
 					gen.m_output << label << ":\n";
@@ -494,6 +563,7 @@ public:
 				else {
 					gen.m_output << label << ":\n";
 				}
+				gen.m_values.clear();
 				gen.m_output << "  \n";
 			}
 
@@ -601,21 +671,24 @@ public:
 					gen.gen_expr(gen.temp_log_expr.value());
 				}
 				gen.if_stat = false;
+
 				gen.log_expr_or();
-				gen.m_values.clear();
+
 				gen.pop("rax");
 				const std::string label = gen.create_label();
 				gen.m_output << "    cmp rax,0\n";
 				gen.m_output << "    je " << label << "\n";
-			
 				gen.m_output << " \n";
+
 				gen.parse_log_expr();
-				gen.log_expr_or();
 				if (gen.m_values[0] == 1)
 				{
+					gen.m_values.clear();
 					gen.gen_scope(stmt_if->scope);
+					gen.m_output << label << ":\n";
 				}
-				if (stmt_if->pred.has_value()) {
+				else if (stmt_if->pred.has_value()) {
+					gen.m_values.clear();
 					const std::string end_label = gen.create_label();
 					gen.m_output << "    jmp " << end_label << "\n";
 					gen.m_output << label << ":\n";
@@ -626,6 +699,7 @@ public:
 					gen.m_output << label << ":\n";
 				}
 				gen.m_output << "  \n";
+				gen.m_values.clear();
 			}
 			void operator()(const NodeStatIncerement* inc)
 			{
@@ -745,34 +819,23 @@ private:
 	}
 	void log_expr_or()
 	{
-		for (int i = 0; i < orCount; i++)
-		{
-			pop("rax");
-			pop("rbx");
-			m_output << "    mov rsi, 1\n";
-			m_output << "    or rax, rbx\n";
-			m_output << "    jne carry_set" << std::to_string(carry_count) << "\n";
+			for (int i = 0; i < orCount; i++)
+			{
+				pop("rax");
+				pop("rbx");
+				m_output << "    mov rsi, 1\n";
+				m_output << "    or rax, rbx\n";
+				m_output << "    jne carry_set" << std::to_string(carry_count) << "\n";
 
-			m_output << "    \n";
-			m_output << "    mov rsi, 0\n";
-			m_output << "    carry_set" << std::to_string(carry_count) << ":\n";
-			m_output << "    \n";
+				m_output << "    \n";
+				m_output << "    mov rsi, 0\n";
+				m_output << "    carry_set" << std::to_string(carry_count) << ":\n";
+				m_output << "    \n";
 
-			m_output << "mov rax,rsi\n";
-			push("rax");
-			carry_count++;
-		}
-		auto it = find(m_values.begin(), m_values.end(), 1);
-		if (it != m_values.end())
-		{
-			m_values.clear();
-			m_values.push_back(1);
-		}
-		else 
-		{
-			m_values.clear();
-			m_values.push_back(0);
-		}
+				m_output << "mov rax,rsi\n";
+				push("rax");
+				carry_count++;
+			}
 		orCount = 0;
 	}
 	void parse_log_expr()
@@ -785,16 +848,76 @@ private:
 				i++;
 				if (auto log = std::get_if<TokenType>(&if_expr[i]))
 				{
+					int val = -1;
 					if (log_prec(*log).has_value())
 					{
+						val = log_prec(*log).value();
 						i++;
-						if (auto rhs = std::get_if<int>(&if_expr[i]))
+						if (val == 0)
 						{
-							i++;
-							if (*lhs > *rhs)
-								m_values.push_back(1);
-							else
-								m_values.push_back(0);
+							if (auto rhs = std::get_if<int>(&if_expr[i]))
+							{
+								i++;
+								if (*lhs > *rhs)
+									m_values.push_back(1);
+								else
+									m_values.push_back(0);
+							}
+						}
+						else if (val == 1)
+						{
+							if (auto rhs = std::get_if<int>(&if_expr[i]))
+							{
+								i++;
+								if (*lhs < *rhs)
+									m_values.push_back(1);
+								else
+									m_values.push_back(0);
+							}
+						}
+						else if (val == 2)
+						{
+							if (auto rhs = std::get_if<int>(&if_expr[i]))
+							{
+								i++;
+								if (*lhs == *rhs)
+									m_values.push_back(1);
+								else
+									m_values.push_back(0);
+							}
+						}
+						else if (val == 3)
+						{
+							if (auto rhs = std::get_if<int>(&if_expr[i]))
+							{
+								i++;
+								if (*lhs != *rhs)
+									m_values.push_back(1);
+								else
+									m_values.push_back(0);
+							}
+						}
+						else if (val == 4)
+						{
+							if (auto rhs = std::get_if<int>(&if_expr[i]))
+							{
+								i++;
+								if (*lhs >= *rhs)
+									m_values.push_back(1);
+								else
+									m_values.push_back(0);
+							}
+						}
+						else if (val == 5)
+						{
+							if (auto rhs = std::get_if<int>(&if_expr[i]))
+							{
+								i++;
+								if (*lhs <= *rhs)
+									m_values.push_back(1);
+								else
+									m_values.push_back(0);
+							}
 						}
 					}
 					else
@@ -819,8 +942,13 @@ private:
 			{
 				if (m_values[m_values.size() - 1] == 1 && m_values[m_values.size() - 2] == 1)
 				{
-					m_values.erase(m_values.end() - 2, m_values.end() - 1);
+					m_values.erase(m_values.end() - 2, m_values.end());
 					m_values.push_back(1);
+				}
+				else
+				{
+					m_values.erase(m_values.end() - 2, m_values.end());
+					m_values.push_back(0);
 				}
 			}
 
@@ -835,14 +963,22 @@ private:
 						std::cerr << "Invalid expr!]\n";
 						exit(EXIT_FAILURE);
 					}
-
-					if (andOr == TokenType::OR)
-					{
-						orCount++;
-					}
 				}
 			}
 		}
+
+		auto it = find(m_values.begin(), m_values.end(), 1);
+		if (it != m_values.end())
+		{
+			m_values.clear();
+			m_values.push_back(1);
+		}
+		else
+		{
+			m_values.clear();
+			m_values.push_back(0);
+		}
+		if_expr.clear();
 	}
 private:
 	std::vector<std::variant<int, TokenType>> if_expr;
