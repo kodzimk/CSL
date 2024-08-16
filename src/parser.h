@@ -270,13 +270,15 @@ public:
 				std::optional<int> prec;
 				if (curr_tok.has_value()) {
 					prec = bin_prec(curr_tok->type);
-					if (!prec.has_value() || prec < min_prec) {
+					if (!prec.has_value() || prec < min_prec) {						
 						break;
 					}
 				}
 				else {
+					m_dont_interupt = false;
 					break;
 				}
+				m_dont_interupt = true;
 				const auto [type, line, value] = consume();
 				const int next_min_prec = prec.value() + 1;
 				auto expr_rhs = parse_expr(next_min_prec);
@@ -306,6 +308,7 @@ public:
 					expr->var = div;
 				}
 				else {
+					m_dont_interupt = false;
 					assert(false);
 				}
 				expr_lhs->var = expr;
@@ -315,7 +318,7 @@ public:
 		std::optional<Token> curr_tok = peek();
 		std::optional<int> prec;
 
-		while (true)
+		while (true && !m_dont_interupt)
 		{
 			curr_tok = peek();
 			if (curr_tok.has_value()) {
@@ -326,7 +329,7 @@ public:
 						NodeLogExpr* log_expr = m_allocator.emplace<NodeLogExpr>();
 						NodeLogExprGreater* log_expr_greater = m_allocator.emplace<NodeLogExprGreater>();
 						log_expr_greater->lhs = m_allocator.emplace<NodeExpr>();
-						log_expr_greater->lhs->var = term_lhs.value();
+						log_expr_greater->lhs->var = expr_lhs->var;
 
 						consume();
 						log_expr_greater->rhs = parse_expr().value();
@@ -352,7 +355,7 @@ public:
 						NodeLogExpr* log_expr = m_allocator.emplace<NodeLogExpr>();
 						NodeLogExprLesser* log_expr_lesser = m_allocator.emplace<NodeLogExprLesser>();
 						log_expr_lesser->lhs = m_allocator.emplace<NodeExpr>();
-						log_expr_lesser->lhs->var = term_lhs.value();
+						log_expr_lesser->lhs->var = expr_lhs->var;
 						consume();
 						log_expr_lesser->rhs = parse_expr().value();
 						if (peek().has_value() && peek().value().type == TokenType::AND)
@@ -377,7 +380,7 @@ public:
 						NodeLogExpr* log_expr = m_allocator.emplace<NodeLogExpr>();
 						NodeLogExprEqual* log_expr_equal = m_allocator.emplace<NodeLogExprEqual>();
 						log_expr_equal->lhs = m_allocator.emplace<NodeExpr>();
-						log_expr_equal->lhs->var = term_lhs.value();
+						log_expr_equal->lhs->var = expr_lhs->var;
 						consume();
 						log_expr_equal->rhs = parse_expr().value();
 						if (peek().has_value() && peek().value().type == TokenType::AND)
@@ -402,7 +405,7 @@ public:
 						NodeLogExpr* log_expr = m_allocator.emplace<NodeLogExpr>();
 						NodeLogExprNotEqual* log_expr_notequal = m_allocator.emplace<NodeLogExprNotEqual>();
 						log_expr_notequal->lhs = m_allocator.emplace<NodeExpr>();
-						log_expr_notequal->lhs->var = term_lhs.value();
+						log_expr_notequal->lhs->var = expr_lhs->var;
 						consume();
 						log_expr_notequal->rhs = parse_expr().value();
 						if (peek().has_value() && peek().value().type == TokenType::AND)
@@ -427,7 +430,7 @@ public:
 						NodeLogExpr* log_expr = m_allocator.emplace<NodeLogExpr>();
 						NodeLogExprGreaterEqual* log_expr_greater_equal = m_allocator.emplace<NodeLogExprGreaterEqual>();
 						log_expr_greater_equal->lhs = m_allocator.emplace<NodeExpr>();
-						log_expr_greater_equal->lhs->var = term_lhs.value();
+						log_expr_greater_equal->lhs->var = expr_lhs->var;
 						consume();
 						log_expr_greater_equal->rhs = parse_expr().value();
 						if (peek().has_value() && peek().value().type == TokenType::AND)
@@ -452,7 +455,7 @@ public:
 						NodeLogExpr* log_expr = m_allocator.emplace<NodeLogExpr>();
 						NodeLogExprLesserEqual* log_expr_lesser_equal = m_allocator.emplace<NodeLogExprLesserEqual>();
 						log_expr_lesser_equal->lhs = m_allocator.emplace<NodeExpr>();
-						log_expr_lesser_equal->lhs->var = term_lhs.value();
+						log_expr_lesser_equal->lhs->var = expr_lhs->var;
 						consume();
 						log_expr_lesser_equal->rhs = parse_expr().value();
 						if (peek().has_value() && peek().value().type == TokenType::AND)
@@ -474,14 +477,16 @@ public:
 					}
 				}
 				else
+				{
 					break;
+				}
 			}
 			else
 				break;
 		}
-
-
-		return expr_lhs;
+		auto expr = m_allocator.emplace<NodeExpr>();
+		expr = expr_lhs;
+		return expr;
 	}
 	std::optional<NodeScope*> parse_scope()
 	{
@@ -788,6 +793,7 @@ private:
 	size_t m_index = 0;
 	std::vector<Token> m_tokens;
 	ArenaAllocator m_allocator;
+	bool m_dont_interupt = false;
 public:
 	std::unordered_map<std::string, std::string> m_vars;
 };

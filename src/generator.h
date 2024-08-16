@@ -390,24 +390,29 @@ public:
 			}
 			void operator()(const NodeTermVar* term_var)
 			{
-				if (gen.m_int_vars.contains(term_var->name))
+			if (gen.m_int_vars.contains(term_var->name))
 				{
+					if (gen.if_stat)
+					{
+						gen.if_expr.push_back(term_var->name);
+					}
+		
 					const auto& var = gen.m_int_vars.at(term_var->name);
 					std::stringstream offset;
 					offset << "QWORD [rsp + " << (gen.m_stack_size - var - 1) * 8 << "]\n";
 					gen.push(offset.str());
 				}
-				else if(!gen.m_char_vars.contains(term_var->eqName) && gen.m_char_vars.contains(term_var->name))
+				else if(find(gen.m_char_vars.begin(), gen.m_char_vars.end(),term_var->eqName) == gen.m_char_vars.end() && find(gen.m_char_vars.begin(), gen.m_char_vars.end(), term_var->name) != gen.m_char_vars.end())
 				{
 					std::vector<std::string> s = { "'","s","'"};
 					gen.m_data << term_var->eqName << " db " << s[0] << s[1] << s[2] << "\n";
-					gen.m_char_vars[term_var->eqName] = 0;
+					gen.m_char_vars.push_back(term_var->eqName);
 
 					gen.m_output << "    mov rax," << "[" << term_var->name << "]" << '\n';
 					gen.m_output << "    mov [" << term_var->eqName << "]," << "rax" << "\n";
 					gen.m_output << "    mov [" << term_var->name << "]," << "rax" << "\n";
 				}
-				else if (gen.m_char_vars.contains(term_var->eqName) && gen.m_char_vars.contains(term_var->name))
+				else if (find(gen.m_char_vars.begin(), gen.m_char_vars.end(), term_var->eqName) != gen.m_char_vars.end() && find(gen.m_char_vars.begin(), gen.m_char_vars.end(), term_var->name) != gen.m_char_vars.end())
 				{
 					gen.m_output << "    mov rax," << "[" << term_var->name << "]" << '\n';
 					gen.m_output << "    mov [" << term_var->eqName << "]," << "rax" << "\n";
@@ -426,11 +431,11 @@ public:
 			}
 			void operator()(const NodeWordCharVal* char_val)
 			{
-				if (!gen.m_char_vars.contains(char_val->name))
+				if (find(gen.m_char_vars.begin(), gen.m_char_vars.end(), char_val->name) == gen.m_char_vars.end())
 				{
 					std::vector<std::string> s = { "'",char_val->value.value(),"'" };
 					gen.m_data << char_val->name << " db " << s[0] << s[1] << s[2] << "," << "0xA" << "," << "0xD" << "\n";
-					gen.m_char_vars[char_val->name] = 0;
+					gen.m_char_vars.push_back(char_val->name);
 				}
 				else
 				{
@@ -566,7 +571,6 @@ public:
 				gen.m_values.clear();
 				gen.m_output << "  \n";
 			}
-
 			void operator()(const NodeIfPredElse* else_) const
 			{
 				gen.gen_scope(else_->scope);
@@ -630,10 +634,14 @@ public:
 			}
 			void operator()(const NodeStatVar* stat_var)
 			{
-				if (gen.m_int_vars.find(stat_var->name) == gen.m_int_vars.end() && gen.m_char_vars.find(stat_var->name) == gen.m_char_vars.end())
+				if (!gen.m_int_vars.contains(stat_var->name) && find(gen.m_char_vars.begin(), gen.m_char_vars.end(), stat_var->name) == gen.m_char_vars.end())
 				{
-					if(stat_var->type != "character")
-					   gen.m_int_vars[stat_var->name] = gen.m_stack_size;
+					if (stat_var->type != "character")
+					{
+						gen.m_int_vars[stat_var->name] = gen.m_stack_size;
+						if(gen.temp_vars)
+						  gen.m_int_name.push_back(stat_var->name);
+					}
 
 					gen.gen_expr(stat_var->expr);
 				}
@@ -645,12 +653,14 @@ public:
 			}
 			void operator()(const NodeStateEq* stat_eq)
 			{
-				if (gen.m_int_vars.contains(stat_eq->variableName) || gen.m_char_vars.contains(stat_eq->variableName))
+				if (gen.m_int_vars.contains(stat_eq->variableName) || find(gen.m_char_vars.begin(), gen.m_char_vars.end(),stat_eq->variableName) != gen.m_char_vars.end())
 				{
 					gen.gen_expr(stat_eq->expr);
-
+					
 					if(gen.m_int_vars.contains(stat_eq->variableName))
-					gen.m_int_vars.at(stat_eq->variableName) = gen.m_stack_size - 1;
+					{
+						gen.m_int_vars.at(stat_eq->variableName) = gen.m_stack_size-1;
+                    }
 				}
 				else
 				{
@@ -709,17 +719,31 @@ public:
 				gen.push("rax");
 
 				if (gen.m_int_vars.contains(inc->variableName))
+				{
 					gen.m_int_vars.at(inc->variableName) = gen.m_stack_size - 1;
+				}
+				else
+				{
+					std::cerr << "Cant findd variable!" << std::endl;
+					exit(EXIT_FAILURE);
+				}
 			}
-			void operator()(const NodeStatDecrement* inc)
+			void operator()(const NodeStatDecrement* dec)
 			{
-				gen.gen_expr(inc->expr);
+				gen.gen_expr(dec->expr);
 				gen.pop("rax");
 				gen.m_output << "   dec rax\n";
 				gen.push("rax");
 
-				if (gen.m_int_vars.contains(inc->variableName))
-					gen.m_int_vars.at(inc->variableName) = gen.m_stack_size - 1;
+				if (gen.m_int_vars.contains(dec->variableName))
+				{
+					gen.m_int_vars.at(dec->variableName) = gen.m_stack_size - 1;
+				}
+				else
+				{
+					std::cerr << "Cant findd variable!" << std::endl;
+					exit(EXIT_FAILURE);
+				}
 			}
 		};
 		StatVisitor visitor = { .gen = *this };
@@ -801,14 +825,22 @@ private:
 	}
 	void begin_scope()
 	{
-		m_scopes.push_back(m_int_vars.size());
+		m_last_index_of_scope.push_back(m_stack_size);
+		temp_vars = true;
 	}
 	void end_scope()
 	{
-		const size_t pop_count = m_int_vars.size() - m_scopes.back();
-		m_output << "    add rsp, " << pop_count * 8 << "\n";
-		m_stack_size -= pop_count;
-		m_scopes.pop_back();
+		for (int i = m_last_index_of_scope[m_last_index_of_scope.size() - 1]; i < m_stack_size; i++)
+		{
+			if (m_int_name.size() > 0)
+			{
+				m_int_vars.erase(m_int_name[m_int_name.size() - 1]);
+				m_int_name.erase(m_int_name.end() - 1);
+			}
+			pop("rax");
+		}
+		m_last_index_of_scope.erase(m_last_index_of_scope.end() - 1);
+		temp_vars = false;
 	}
 	std::string create_label()
 	{
@@ -981,7 +1013,7 @@ private:
 		if_expr.clear();
 	}
 private:
-	std::vector<std::variant<int, TokenType>> if_expr;
+	std::vector<std::variant<int,std::string, TokenType>> if_expr;
     std::vector<int> m_values;
 	size_t m_stack_size = 0;
 	NodeProg prog;
@@ -989,13 +1021,21 @@ private:
 	std::stringstream m_data;
 	std::stringstream m_bss;
 	std::stringstream m_functions;
-	std::unordered_map<std::string,size_t> m_int_vars;
-	std::unordered_map<std::string, int> m_char_vars;
+
+	struct INT_VAR
+	{
+		std::string name;
+		size_t offset;
+	};
+	std::unordered_map<std::string, size_t> m_int_vars;
+	std::vector<int> m_last_index_of_scope;
+	std::vector<std::string> m_int_name;
+	std::vector<std::string> m_char_vars;
 	std::unordered_map<std::string, std::string> m_types;
 
-	std::vector<size_t> m_scopes{};
 	std::optional<NodeExpr*> temp_log_expr = nullptr;
 
+	bool temp_vars = false;
 	int m_label_count = 0;
 	int carry_count = 0;
 	int orCount = 0;
