@@ -156,6 +156,12 @@ struct NodeStatPrint
 	bool newLine;
 };
 
+struct NodeStatInput
+{
+	std::string name;
+	NodeExpr* expr;
+};
+
 struct NodeStat;
 
 struct NodeScope {
@@ -191,7 +197,7 @@ struct NodeStatExit
 
 struct NodeStat
 {
-	std::variant<NodeStatExit*,NodeStatVar*,NodeStateEq*,NodeStatPrint*,NodeScope*, NodeStatIf*,NodeStatIncerement*, NodeStatDecrement*> stat;
+	std::variant<NodeStatExit*,NodeStatVar*,NodeStateEq*,NodeStatPrint*,NodeScope*, NodeStatIf*,NodeStatIncerement*, NodeStatDecrement*,NodeStatInput*> stat;
 };
 
 struct NodeProg
@@ -599,6 +605,12 @@ public:
 				NodeWordCharVal* val = std::get<NodeWordCharVal*>(word->var);
 				val->name = stat_eq->variableName;
 			} 
+			else if (stat_eq->type == "variable")
+			{
+				NodeTerm* word = std::get<NodeTerm*>(stat_eq->expr->var);
+				NodeTermVar* val = std::get<NodeTermVar*>(word->var);
+				val->eqName = stat_eq->variableName;
+			}
 			
 
 			stat->stat = stat_eq;
@@ -725,6 +737,23 @@ public:
 
 
 				stat->stat = inc;
+				return stat;
+			}
+		else if (peek().has_value() && peek().value().type == TokenType::INPUT && peek(1).has_value() && peek(1).value().type == TokenType::open_paren &&
+			peek(2).has_value() && peek(2).value().type == TokenType::variable)
+			{
+				consume();
+				consume();
+				NodeStatInput* stat_input = m_allocator.emplace<NodeStatInput>();
+				stat_input->expr = parse_expr().value();
+				NodeTerm* term = std::get<NodeTerm*>(stat_input->expr->var);
+				NodeTermVar* var = std::get<NodeTermVar*>(term->var);
+				stat_input->name = var->name;		
+
+				NodeStat* stat = m_allocator.emplace<NodeStat>();
+				stat->stat = stat_input;
+				consume();
+				consume();
 				return stat;
 			}
 

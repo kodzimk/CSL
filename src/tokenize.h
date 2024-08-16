@@ -35,6 +35,7 @@ enum TokenType
 	 OR,
 	 AND,
 	 boolean,
+	 INPUT,
 };
 inline std::string to_string(const TokenType type)
 {
@@ -171,6 +172,11 @@ public:
 				else if (str == "main")
 				{
 					tokens.push_back({ .type = TokenType::MAIN });
+					str.clear();
+				}
+				else if (str == "cin")
+				{
+					tokens.push_back({ .type = TokenType::INPUT });
 					str.clear();
 				}
 				else if (str == "char")

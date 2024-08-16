@@ -595,11 +595,11 @@ public:
 			{
 				if (stat_print->variableName.has_value() && gen.m_types.contains(stat_print->variableName.value()) && gen.m_types.at(stat_print->variableName.value()) == "character")
 				{
-					gen.m_output << "    mov edx,1" << "\n";
-					gen.m_output << "    mov ecx," << stat_print->variableName.value() << "\n";
-					gen.m_output << "    mov ebx,1" << "\n";
-					gen.m_output << "    mov eax,4" << "\n";
-					gen.m_output << "    int 0x80\n";
+					gen.m_output << "    mov rax,1" << "\n";
+					gen.m_output << "    mov rsi," << stat_print->variableName.value() << "\n";
+					gen.m_output << "    mov rdi,1" << "\n";
+					gen.m_output << "    mov rdx,1" << "\n";
+					gen.m_output << "    syscall\n";
 					gen.m_output << "    \n";
 				}
 				else if (stat_print->type == "character")
@@ -745,6 +745,38 @@ public:
 					exit(EXIT_FAILURE);
 				}
 			}
+			void operator()(const NodeStatInput* stat_input)
+			{
+				if (gen.m_int_vars.contains(stat_input->name))
+				{
+					gen.m_output << "    mov rax,0\n";
+					gen.m_output << "    mov rdi,0\n";
+					gen.m_output << "    mov rsi,inputNumbers\n";
+					gen.m_output << "    mov rdx,1\n";
+					gen.m_output << "    syscall\n";
+
+					gen.m_output << "    mov rax,[inputNumbers]\n";
+					gen.m_output << "    sub rax,48\n";
+					gen.push("rax");
+					gen.m_int_vars.at(stat_input->name) = gen.m_stack_size - 1;
+				}
+				else if (find(gen.m_char_vars.begin(), gen.m_char_vars.end(), stat_input->name) != gen.m_char_vars.end())
+				{
+					gen.m_output << "    mov rax,0\n";
+					gen.m_output << "    mov rdi,0\n";
+					gen.m_output << "    mov rsi,inputNumbers\n";
+					gen.m_output << "    mov rdx,1\n";
+					gen.m_output << "    syscall\n";
+
+					gen.m_output << "    mov rax,[inputNumbers]\n";
+					gen.m_output << "    mov ["<<stat_input->name <<"],rax\n";
+				}
+				else
+				{
+					std::cerr << "Cant findd variable!" << std::endl;
+					exit(EXIT_FAILURE);
+				}
+			}
 		};
 		StatVisitor visitor = { .gen = *this };
 		std::visit(visitor, stat->stat);
@@ -752,10 +784,10 @@ public:
 
 	std::string gen_prog()
 	{
-		m_bss << "section .bss\n stringBuffer resb 100\nstringBufferPos resb 8\n";
+		m_bss << "section .bss\n stringBuffer resb 100\nstringBufferPos resb 8\ninputNumbers resb 8\n";
 		m_data << "section .data\n";
 		m_data << "newLineMsg db 0xA, 0xD\n";
-		m_data << "newLineLen equ $ - newLineMsg\n";\
+		m_data << "newLineLen equ $ - newLineMsg\n";
 		m_data << "temp db 'a',0xA,0xD\n";
 
 		m_functions << "exit:\n";
@@ -1030,14 +1062,14 @@ private:
 	std::unordered_map<std::string, size_t> m_int_vars;
 	std::vector<int> m_last_index_of_scope;
 	std::vector<std::string> m_int_name;
-	std::vector<std::string> m_char_vars;
+	std::vector<std::string> m_char_vars; 
 	std::unordered_map<std::string, std::string> m_types;
 
 	std::optional<NodeExpr*> temp_log_expr = nullptr;
 
-	bool temp_vars = false;
 	int m_label_count = 0;
 	int carry_count = 0;
 	int orCount = 0;
+	bool temp_vars = false;
 	bool if_stat = false;
 };

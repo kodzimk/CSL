@@ -2,19 +2,13 @@ int main()
 {
   char symbol = 's';
   char s = ' ';
-  int a = 2;
+  int a = 0;
+  s = symbol;
+  cin(a);
   int b = 3;
 
-  if(2 > 1)
-  {
-    b = b + 2;
-    int c = 0;
-    c = 2 + 1;
-    printf(c);
-  }
-
-
-  printf(b);
+  printf(symbol$n);
+  printf(a);
 
 
   return a;
