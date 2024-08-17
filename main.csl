@@ -4,7 +4,8 @@ int main()
   char s = ' ';
   int a = 3;
    int b = 4;
-   a = a + (2 - 1) * 4;
+   a = 2 + (a - 2) * 2 + (2 + 1) * 4;
+   printf(a);
    
  if(b >= a & b == a | b >= a)
   {

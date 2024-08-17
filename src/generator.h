@@ -18,9 +18,11 @@ using namespace std;
 class Generator
 {
 public:
-	Generator(NodeProg prog,std::unordered_map<std::string,std::string> m_types)
+	Generator(NodeProg prog,std::unordered_map<std::string,std::string> m_types,int m_visit_count,std::vector<int> m_paren_count)
 		: prog(prog),
-		m_types(m_types)
+		m_types(m_types),
+		m_visit_count(m_visit_count),
+		m_paren_count(m_paren_count)
 	{
 
 	}
@@ -431,7 +433,12 @@ public:
 			}
 			void operator()(NodeTermParen* term_paren)
 			{
+				gen.count_paren = true;
+				gen.m_bin_expr += "( ";
 				gen.gen_expr(term_paren->expr);
+				gen.m_bin_expr += "  )";
+				gen.m_paren_count.erase(gen.m_paren_count.begin());
+				gen.count_paren = false;
 			}
 			void operator()(const NodeWordCharVal* char_val)
 			{
@@ -463,11 +470,33 @@ public:
 			void operator()(const NodeBinExprSub* sub) 
 			{
 				gen.gen_expr(sub->lhs);
-				gen.m_bin_expr += std::to_string(gen.value.value());
+				if (gen.m_bin_expr.size() > 0)
+				{
+					for (int i = gen.m_bin_expr.size() - 1; i >= 0; i++)
+					{
+						if (gen.m_bin_expr[i] != ' ' && gen.m_bin_expr[i] != ')')
+						{
+							gen.m_bin_expr += std::to_string(gen.value.value());
+							break;
+						}
+						else if (gen.m_bin_expr[i] == ')')
+							break;
+					}
+				}
+				else
+					gen.m_bin_expr += std::to_string(gen.value.value());
+
 				gen.m_bin_expr += " - ";
 				gen.value.reset();
 				gen.gen_expr(sub->rhs);
-				gen.m_bin_expr += std::to_string(gen.value.value());
+				gen.m_visit_count--;
+				if (gen.count_paren)
+					gen.m_paren_count[0]--;
+
+				if(gen.m_visit_count == 0 || gen.m_paren_count[0] == 0)
+					gen.m_bin_expr += std::to_string(gen.value.value());
+
+
 				gen.pop("rbx");
 				gen.pop("rax");
 				gen.m_output << "    sub rax, rbx\n";
@@ -477,11 +506,31 @@ public:
 			void operator()(const NodeBinExprAdd* add) 
 			{
 				gen.gen_expr(add->lhs);
-				gen.m_bin_expr += std::to_string(gen.value.value());
-				gen.m_bin_expr += " + ";
-				gen.value.reset();
+				if (gen.m_bin_expr.size() > 0)
+				{
+					for (int i = gen.m_bin_expr.size() - 1; i >= 0; i++)
+					{
+						if (gen.m_bin_expr[i] != ' ' && gen.m_bin_expr[i] != ')')
+						{
+							gen.m_bin_expr += std::to_string(gen.value.value());
+							break;
+						}
+						else if (gen.m_bin_expr[i] == ')')
+							break;
+					}
+				}
+				else
+					gen.m_bin_expr += std::to_string(gen.value.value());
+					gen.m_bin_expr += " + ";
+					gen.value.reset(); 
 				gen.gen_expr(add->rhs);
-				gen.m_bin_expr += std::to_string(gen.value.value());
+
+				gen.m_visit_count--;
+				if (gen.count_paren)
+					gen.m_paren_count[0]--;
+
+				if (gen.m_visit_count == 0 || gen.m_paren_count[0] == 0)
+					gen.m_bin_expr += std::to_string(gen.value.value());
 
 				gen.pop("rbx");
 				gen.pop("rax");
@@ -492,12 +541,31 @@ public:
 			void operator()(const NodeBinExprMulti* multi) 
 			{
 				gen.gen_expr(multi->lhs);
-				gen.m_bin_expr += std::to_string(gen.value.value());
+				if (gen.m_bin_expr.size() > 0)
+				{
+					for (int i = gen.m_bin_expr.size() - 1; i >= 0; i++)
+					{
+						if (gen.m_bin_expr[i] != ' ' && gen.m_bin_expr[i] != ')')
+						{
+							gen.m_bin_expr += std::to_string(gen.value.value());
+							break;
+						}
+						else if (gen.m_bin_expr[i] == ')')
+							break;
+					}
+				}
+				else
+					gen.m_bin_expr += std::to_string(gen.value.value());
 				gen.m_bin_expr += " * ";
 				gen.value.reset();
 				gen.gen_expr(multi->rhs);
-				gen.m_bin_expr += std::to_string(gen.value.value());
+				gen.m_visit_count--;
 
+				if (gen.count_paren)
+					gen.m_paren_count[0]--;
+
+				if (gen.m_visit_count == 0 || (gen.m_paren_count.size() > 0 && gen.m_paren_count[0] == 0))
+					gen.m_bin_expr += std::to_string(gen.value.value());
 				gen.pop("rbx");
 				gen.pop("rax");
 				gen.m_output << "    mul rbx\n";
@@ -507,12 +575,31 @@ public:
 			void operator()(const NodeBinExprDiv* div) 
 			{
 				gen.gen_expr(div->lhs);
-				gen.m_bin_expr += std::to_string(gen.value.value());
+				if (gen.m_bin_expr.size() > 0)
+				{
+					for (int i = gen.m_bin_expr.size() - 1; i >= 0; i++)
+					{
+						if (gen.m_bin_expr[i] != ' ' && gen.m_bin_expr[i] != ')')
+						{
+							gen.m_bin_expr += std::to_string(gen.value.value());
+							break;
+						}
+						else if (gen.m_bin_expr[i] == ')')
+							break;
+					}
+				}
+				else
+					gen.m_bin_expr += std::to_string(gen.value.value());
 				gen.m_bin_expr += " / ";
 				gen.value.reset();
 				gen.gen_expr(div->rhs);
-				gen.m_bin_expr += std::to_string(gen.value.value());
+				gen.m_visit_count--;
 
+				if (gen.count_paren)
+					gen.m_paren_count[0]--;
+
+				if (gen.m_visit_count == 0 || gen.m_paren_count[0] == 0)
+					gen.m_bin_expr += std::to_string(gen.value.value());
 				gen.pop("rbx");
 				gen.pop("rax");
 				gen.m_output << "    div rbx\n";
@@ -662,7 +749,12 @@ public:
 					gen.m_cur_var = stat_var->name;
 					gen.gen_expr(stat_var->expr);
 					if (!gen.m_bin_expr.empty())
+					{
+						gen.m_int_values[stat_var->name] = gen.value.value();
 						gen.parse_bin_expr();
+					}
+					else if(stat_var->type != "character")
+						gen.m_int_values[stat_var->name] = gen.value.value();
 
 					if (stat_var->type != "character")
 					{
@@ -671,8 +763,6 @@ public:
 						{
 							gen.m_int_name.push_back(stat_var->name);
 						}
-						gen.m_int_values[stat_var->name] = gen.value.value();
-							gen.value = NULL;
 					}
 				}
 				else
@@ -890,111 +980,99 @@ public:
 		return output;
 	}
 private:
-	bool isOperator(char c)
-	{
-		// Returns true if the character is an operator
-		return c == '+' || c == '-' || c == '*' || c == '/'
-			|| c == '^';
-	}
-	int precedence(char op)
-	{
-		// Returns the precedence of the operator
+	int precedence(char op) {
 		if (op == '+' || op == '-')
 			return 1;
 		if (op == '*' || op == '/')
 			return 2;
-		if (op == '^')
-			return 3;
 		return 0;
 	}
-	double applyOp(double a, double b, char op)
-	{
+	int applyOp(int a, int b, char op) {
 		switch (op) {
-		case '+':
-			return a + b;
-		case '-':
-			return a - b;
-		case '*':
-			return a * b;
-		case '/':
-			return a / b;
-		case '^':
-			return pow(a, b);
-		default:
-			return 0;
+		case '+': return a + b;
+		case '-': return a - b;
+		case '*': return a * b;
+		case '/': return a / b;
 		}
 	}
-	double evaluateExpression(const string& expression)
-	{
-		stack<char> operators; // Stack to hold operators
-		stack<double> operands; // Stack to hold operands
+	int evaluate(string tokens) {
+		int i;
 
-		stringstream ss(expression);
+		stack <int> values;
+		stack <char> ops;
 
-		string token;
-		while (getline(
-			ss, token,
-			' ')) { 
-			if (token.empty())
+		for (i = 0; i < tokens.length(); i++) {
+			if (tokens[i] == ' ')
 				continue;
-			if (isdigit(token[0])) { 
-				double num;
-				stringstream(token)
-					>> num; 
-				operands.push(num); 
+			else if (tokens[i] == '(') {
+				ops.push(tokens[i]);
 			}
-			else if (isOperator(token[0])) { 
-				char op = token[0];
-				while (!operators.empty()
-					&& precedence(operators.top())
-					>= precedence(op)) {
 
-					double b = operands.top();
-					operands.pop();
-					double a = operands.top();
-					operands.pop();
-					char op = operators.top();
-					operators.pop();
-
-					operands.push(applyOp(a, b, op));
+			else if (isdigit(tokens[i])) {
+				int val = 0;
+				while (i < tokens.length() &&
+					isdigit(tokens[i]))
+				{
+					val = (val * 10) + (tokens[i] - '0');
+					i++;
 				}
 
-				operators.push(op);
+				values.push(val);
+				i--;
 			}
-			else if (token[0] == '(') { 
+			else if (tokens[i] == ')')
+			{
+				while (!ops.empty() && ops.top() != '(')
+				{
+					int val2 = values.top();
+					values.pop();
 
-				operators.push('(');
-			}
-			else if (token[0] == ')') { 
+					int val1 = values.top();
+					values.pop();
 
-				while (!operators.empty()
-					&& operators.top() != '(') {
-					double b = operands.top();
-					operands.pop();
-					double a = operands.top();
-					operands.pop();
-					char op = operators.top();
-					operators.pop();
+					char op = ops.top();
+					ops.pop();
 
-					operands.push(applyOp(a, b, op));
+					values.push(applyOp(val1, val2, op));
 				}
 
-				operators.pop();
+				if (!ops.empty())
+					ops.pop();
+			}
+			else
+			{
+
+				while (!ops.empty() && precedence(ops.top())
+					>= precedence(tokens[i])) {
+					int val2 = values.top();
+					values.pop();
+
+					int val1 = values.top();
+					values.pop();
+
+					char op = ops.top();
+					ops.pop();
+
+					values.push(applyOp(val1, val2, op));
+				}
+				ops.push(tokens[i]);
 			}
 		}
 
-		while (!operators.empty()) {
-			double b = operands.top();
-			operands.pop();
-			double a = operands.top();
-			operands.pop();
-			char op = operators.top();
-			operators.pop();
+		while (!ops.empty()) {
+			int val2 = values.top();
+			values.pop();
 
-			operands.push(applyOp(a, b, op));
+			int val1 = values.top();
+			values.pop();
+
+			char op = ops.top();
+			ops.pop();
+
+			values.push(applyOp(val1, val2, op));
 		}
 
-		return operands.top();
+		return values.top();
 	}
 	void push(std::string reg)
 	{
@@ -1407,10 +1485,10 @@ private:
 	}
 	void parse_bin_expr()
 	{
-		m_bin_expr.erase(m_bin_expr.end()-1);
-		double value = evaluateExpression(m_bin_expr);
+		m_int_values.at(m_cur_var.value()) = evaluate(m_bin_expr);
+		std::cout << evaluate(m_bin_expr);
+		m_cur_var.reset();
 		m_bin_expr.clear();
-		m_int_values.at(m_cur_var.value()) = value;
 	}
 
 private:
@@ -1424,20 +1502,23 @@ private:
 	std::stringstream m_functions;
 	std::string m_bin_expr;
 
+	std::vector<int> m_paren_count;
 	std::vector<size_t> m_last_index_of_scope;
-	std::unordered_map<std::string, size_t> m_int_vars;
 	std::vector<std::string> m_int_name;
-	std::unordered_map<std::string, int> m_int_values;
 	std::vector<std::string> m_char_vars; 
+	std::unordered_map<std::string, size_t> m_int_vars;
+	std::unordered_map<std::string, int> m_int_values;
 	std::unordered_map<std::string, std::string> m_types;
 	std::optional<int> value;
 	std::optional<std::string> m_cur_var;
 
 	std::optional<NodeExpr*> temp_log_expr = nullptr;
-
+	int temp = 0;
+	int m_visit_count = 0;
 	int m_label_count = 0;
 	int carry_count = 0;
 	int orCount = 0;
 	bool temp_vars = false;
 	bool if_stat = false;
+	bool count_paren = false;
 };
