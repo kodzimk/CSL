@@ -9,9 +9,11 @@
 #include<sstream>
 #include<unordered_map>
 #include<cassert>
+#include<stack>
 
 #include"parser.h"
 
+using namespace std;
 
 class Generator
 {
@@ -385,6 +387,7 @@ public:
 				{
 					gen.if_expr.push_back(stoi(int_val->value.value()));
 				}
+				gen.value = stoi(int_val->value.value());
 				gen.m_output << "   mov rax," << int_val->value.value() << '\n';
 				gen.push("rax");
 			}
@@ -396,7 +399,7 @@ public:
 					{
 						gen.if_expr.push_back(term_var->name);
 					}
-		
+					gen.value = gen.m_int_values.at(term_var->name);
 					const auto& var = gen.m_int_vars.at(term_var->name);
 					std::stringstream offset;
 					offset << "QWORD [rsp + " << (gen.m_stack_size - var - 1) * 8 << "]\n";
@@ -420,6 +423,7 @@ public:
 				}
 				else
 				{
+				        gen.value = stoi(term_var->value.value());
 						gen.m_output << "   mov rax, " <<  term_var->value.value() << '\n';
 						gen.push("rax");
 					
@@ -458,40 +462,59 @@ public:
 
 			void operator()(const NodeBinExprSub* sub) 
 			{
-				gen.gen_expr(sub->rhs);
 				gen.gen_expr(sub->lhs);
-				gen.pop("rax");
+				gen.m_bin_expr += std::to_string(gen.value.value());
+				gen.m_bin_expr += " - ";
+				gen.value.reset();
+				gen.gen_expr(sub->rhs);
+				gen.m_bin_expr += std::to_string(gen.value.value());
 				gen.pop("rbx");
+				gen.pop("rax");
 				gen.m_output << "    sub rax, rbx\n";
 				gen.push("rax");
 			}
 
 			void operator()(const NodeBinExprAdd* add) 
 			{
-				gen.gen_expr(add->rhs);
 				gen.gen_expr(add->lhs);
-				gen.pop("rax");
+				gen.m_bin_expr += std::to_string(gen.value.value());
+				gen.m_bin_expr += " + ";
+				gen.value.reset();
+				gen.gen_expr(add->rhs);
+				gen.m_bin_expr += std::to_string(gen.value.value());
+
 				gen.pop("rbx");
+				gen.pop("rax");
 				gen.m_output << "    add rax, rbx\n";
 				gen.push("rax");
 			}
 
 			void operator()(const NodeBinExprMulti* multi) 
 			{
-				gen.gen_expr(multi->rhs);
 				gen.gen_expr(multi->lhs);
-				gen.pop("rax");
+				gen.m_bin_expr += std::to_string(gen.value.value());
+				gen.m_bin_expr += " * ";
+				gen.value.reset();
+				gen.gen_expr(multi->rhs);
+				gen.m_bin_expr += std::to_string(gen.value.value());
+
 				gen.pop("rbx");
+				gen.pop("rax");
 				gen.m_output << "    mul rbx\n";
 				gen.push("rax");
 			}
 
 			void operator()(const NodeBinExprDiv* div) 
 			{
-				gen.gen_expr(div->rhs);
 				gen.gen_expr(div->lhs);
-				gen.pop("rax");
+				gen.m_bin_expr += std::to_string(gen.value.value());
+				gen.m_bin_expr += " / ";
+				gen.value.reset();
+				gen.gen_expr(div->rhs);
+				gen.m_bin_expr += std::to_string(gen.value.value());
+
 				gen.pop("rbx");
+				gen.pop("rax");
 				gen.m_output << "    div rbx\n";
 				gen.push("rax");
 			}
@@ -636,14 +659,21 @@ public:
 			{
 				if (!gen.m_int_vars.contains(stat_var->name) && find(gen.m_char_vars.begin(), gen.m_char_vars.end(), stat_var->name) == gen.m_char_vars.end())
 				{
+					gen.m_cur_var = stat_var->name;
+					gen.gen_expr(stat_var->expr);
+					if (!gen.m_bin_expr.empty())
+						gen.parse_bin_expr();
+
 					if (stat_var->type != "character")
 					{
-						gen.m_int_vars[stat_var->name] = gen.m_stack_size;
-						if(gen.temp_vars)
-						  gen.m_int_name.push_back(stat_var->name);
+						gen.m_int_vars[stat_var->name] = gen.m_stack_size - 1;
+						if (gen.temp_vars)
+						{
+							gen.m_int_name.push_back(stat_var->name);
+						}
+						gen.m_int_values[stat_var->name] = gen.value.value();
+							gen.value = NULL;
 					}
-
-					gen.gen_expr(stat_var->expr);
 				}
 				else
 				{
@@ -655,11 +685,18 @@ public:
 			{
 				if (gen.m_int_vars.contains(stat_eq->variableName) || find(gen.m_char_vars.begin(), gen.m_char_vars.end(),stat_eq->variableName) != gen.m_char_vars.end())
 				{
+					gen.m_cur_var = stat_eq->variableName;
 					gen.gen_expr(stat_eq->expr);
+
+					if (!gen.m_bin_expr.empty())
+						gen.parse_bin_expr();
+					else
+						gen.m_int_values.at(stat_eq->variableName) = gen.value.value();
 					
 					if(gen.m_int_vars.contains(stat_eq->variableName))
 					{
 						gen.m_int_vars.at(stat_eq->variableName) = gen.m_stack_size-1;
+						gen.value = NULL;
                     }
 				}
 				else
@@ -721,6 +758,10 @@ public:
 				if (gen.m_int_vars.contains(inc->variableName))
 				{
 					gen.m_int_vars.at(inc->variableName) = gen.m_stack_size - 1;
+					int value = gen.m_int_values.at(inc->variableName);
+					value++;
+		            gen.m_int_values.at(inc->variableName) = value;
+					gen.value = NULL;
 				}
 				else
 				{
@@ -738,6 +779,10 @@ public:
 				if (gen.m_int_vars.contains(dec->variableName))
 				{
 					gen.m_int_vars.at(dec->variableName) = gen.m_stack_size - 1;
+					int value = gen.m_int_values.at(dec->variableName);
+					value--;
+					gen.m_int_values.at(dec->variableName) = value;
+					gen.value = NULL;
 				}
 				else
 				{
@@ -845,6 +890,112 @@ public:
 		return output;
 	}
 private:
+	bool isOperator(char c)
+	{
+		// Returns true if the character is an operator
+		return c == '+' || c == '-' || c == '*' || c == '/'
+			|| c == '^';
+	}
+	int precedence(char op)
+	{
+		// Returns the precedence of the operator
+		if (op == '+' || op == '-')
+			return 1;
+		if (op == '*' || op == '/')
+			return 2;
+		if (op == '^')
+			return 3;
+		return 0;
+	}
+	double applyOp(double a, double b, char op)
+	{
+		switch (op) {
+		case '+':
+			return a + b;
+		case '-':
+			return a - b;
+		case '*':
+			return a * b;
+		case '/':
+			return a / b;
+		case '^':
+			return pow(a, b);
+		default:
+			return 0;
+		}
+	}
+	double evaluateExpression(const string& expression)
+	{
+		stack<char> operators; // Stack to hold operators
+		stack<double> operands; // Stack to hold operands
+
+		stringstream ss(expression);
+
+		string token;
+		while (getline(
+			ss, token,
+			' ')) { 
+			if (token.empty())
+				continue;
+			if (isdigit(token[0])) { 
+				double num;
+				stringstream(token)
+					>> num; 
+				operands.push(num); 
+			}
+			else if (isOperator(token[0])) { 
+				char op = token[0];
+				while (!operators.empty()
+					&& precedence(operators.top())
+					>= precedence(op)) {
+
+					double b = operands.top();
+					operands.pop();
+					double a = operands.top();
+					operands.pop();
+					char op = operators.top();
+					operators.pop();
+
+					operands.push(applyOp(a, b, op));
+				}
+
+				operators.push(op);
+			}
+			else if (token[0] == '(') { 
+
+				operators.push('(');
+			}
+			else if (token[0] == ')') { 
+
+				while (!operators.empty()
+					&& operators.top() != '(') {
+					double b = operands.top();
+					operands.pop();
+					double a = operands.top();
+					operands.pop();
+					char op = operators.top();
+					operators.pop();
+
+					operands.push(applyOp(a, b, op));
+				}
+
+				operators.pop();
+			}
+		}
+
+		while (!operators.empty()) {
+			double b = operands.top();
+			operands.pop();
+			double a = operands.top();
+			operands.pop();
+			char op = operators.top();
+			operators.pop();
+
+			operands.push(applyOp(a, b, op));
+		}
+
+		return operands.top();
+	}
 	void push(std::string reg)
 	{
 		m_output << "   push " << reg << '\n';
@@ -912,12 +1063,12 @@ private:
 				i++;
 				if (auto log = std::get_if<TokenType>(&if_expr[i]))
 				{
-					int val = -1;
+					int log_val = -1;
 					if (log_prec(*log).has_value())
 					{
-						val = log_prec(*log).value();
+						log_val = log_prec(*log).value();
 						i++;
-						if (val == 0)
+						if (log_val == 0)
 						{
 							if (auto rhs = std::get_if<int>(&if_expr[i]))
 							{
@@ -927,8 +1078,18 @@ private:
 								else
 									m_values.push_back(0);
 							}
+							else if (auto rhs = std::get_if<std::string>(&if_expr[i]))
+							{
+								i++;
+								int val = m_int_values.at(*rhs);
+								auto it2 = find(m_int_name.begin(), m_int_name.end(), *rhs);
+								if (*lhs > val)
+									m_values.push_back(1);
+								else
+									m_values.push_back(0);
+							}
 						}
-						else if (val == 1)
+						else if (log_val == 1)
 						{
 							if (auto rhs = std::get_if<int>(&if_expr[i]))
 							{
@@ -938,8 +1099,18 @@ private:
 								else
 									m_values.push_back(0);
 							}
+							else if (auto rhs = std::get_if<std::string>(&if_expr[i]))
+							{
+								i++;
+								int val = m_int_values.at(*rhs);
+								auto it2 = find(m_int_name.begin(), m_int_name.end(), *rhs);
+								if (*lhs < val)
+									m_values.push_back(1);
+								else
+									m_values.push_back(0);
+							}
 						}
-						else if (val == 2)
+						else if (log_val == 2)
 						{
 							if (auto rhs = std::get_if<int>(&if_expr[i]))
 							{
@@ -949,8 +1120,18 @@ private:
 								else
 									m_values.push_back(0);
 							}
+							else if (auto rhs = std::get_if<std::string>(&if_expr[i]))
+							{
+								i++;
+								int val = m_int_values.at(*rhs);
+								auto it2 = find(m_int_name.begin(), m_int_name.end(), *rhs);
+								if (*lhs == val)
+									m_values.push_back(1);
+								else
+									m_values.push_back(0);
+							}
 						}
-						else if (val == 3)
+						else if (log_val == 3)
 						{
 							if (auto rhs = std::get_if<int>(&if_expr[i]))
 							{
@@ -960,8 +1141,18 @@ private:
 								else
 									m_values.push_back(0);
 							}
+							else if (auto rhs = std::get_if<std::string>(&if_expr[i]))
+							{
+								i++;
+								int val = m_int_values.at(*rhs);
+								auto it2 = find(m_int_name.begin(), m_int_name.end(), *rhs);
+								if (*lhs != val)
+									m_values.push_back(1);
+								else
+									m_values.push_back(0);
+							}
 						}
-						else if (val == 4)
+						else if (log_val == 4)
 						{
 							if (auto rhs = std::get_if<int>(&if_expr[i]))
 							{
@@ -971,13 +1162,183 @@ private:
 								else
 									m_values.push_back(0);
 							}
+							else if (auto rhs = std::get_if<std::string>(&if_expr[i]))
+							{
+								i++;
+								int val = m_int_values.at(*rhs);
+								auto it2 = find(m_int_name.begin(), m_int_name.end(), *rhs);
+								if (*lhs >= val)
+									m_values.push_back(1);
+								else
+									m_values.push_back(0);
+							}
 						}
-						else if (val == 5)
+						else if (log_val == 5)
 						{
 							if (auto rhs = std::get_if<int>(&if_expr[i]))
 							{
 								i++;
 								if (*lhs <= *rhs)
+									m_values.push_back(1);
+								else
+									m_values.push_back(0);
+							}
+							else if (auto rhs = std::get_if<std::string>(&if_expr[i]))
+							{
+								i++;
+								int val = m_int_values.at(*rhs);
+								auto it2 = find(m_int_name.begin(), m_int_name.end(), *rhs);
+								if (*lhs <= val)
+									m_values.push_back(1);
+								else
+									m_values.push_back(0);
+							}
+						}
+					}
+					else
+					{
+						std::cerr << "Invalid expr!]\n";
+						exit(EXIT_FAILURE);
+					}
+				}
+				else
+				{
+					std::cerr << "Invalid expr!]\n";
+					exit(EXIT_FAILURE);
+				}
+			}
+			else if (auto lhs = std::get_if<std::string>(&if_expr[i]))
+			{
+				int val1 = m_int_values.at(*lhs);
+				i++;
+				if (auto log = std::get_if<TokenType>(&if_expr[i]))
+				{   
+					int log_val = 0;
+					if (log_prec(*log).has_value())
+					{
+						log_val = log_prec(*log).value();
+						i++;
+						if (log_val == 0)
+						{
+							if (auto rhs = std::get_if<int>(&if_expr[i]))
+							{
+								i++;
+								if (val1 > *rhs)
+									m_values.push_back(1);
+								else
+									m_values.push_back(0);
+							}
+							else if (auto rhs = std::get_if<std::string>(&if_expr[i]))
+							{
+								i++;
+								int val = m_int_values.at(*rhs);
+								auto it2 = find(m_int_name.begin(), m_int_name.end(), *rhs);
+								if (val1 > val)
+									m_values.push_back(1);
+								else
+									m_values.push_back(0);
+							}
+						}
+						else if (log_val == 1)
+						{
+							if (auto rhs = std::get_if<int>(&if_expr[i]))
+							{
+								i++;
+								if(val1 < *rhs)
+									m_values.push_back(1);
+								else
+									m_values.push_back(0);
+							}
+							else if (auto rhs = std::get_if<std::string>(&if_expr[i]))
+							{
+								i++;
+								int val = m_int_values.at(*rhs);
+								auto it2 = find(m_int_name.begin(), m_int_name.end(), *rhs);
+								if (val1 < val)
+									m_values.push_back(1);
+								else
+									m_values.push_back(0);
+							}
+						}
+						else if (log_val == 2)
+						{
+							if (auto rhs = std::get_if<int>(&if_expr[i]))
+							{
+								i++;
+								if (val1 == *rhs)
+									m_values.push_back(1);
+								else
+									m_values.push_back(0);
+							}
+							else if (auto rhs = std::get_if<std::string>(&if_expr[i]))
+							{
+								i++;
+								int val = m_int_values.at(*rhs);
+								auto it2 = find(m_int_name.begin(), m_int_name.end(), *rhs);
+								if (val1 == val)
+									m_values.push_back(1);
+								else
+									m_values.push_back(0);
+							}
+						}
+						else if (log_val == 3)
+						{
+							if (auto rhs = std::get_if<int>(&if_expr[i]))
+							{
+								i++;
+								if (val1 != *rhs)
+									m_values.push_back(1);
+								else
+									m_values.push_back(0);
+							}
+							else if (auto rhs = std::get_if<std::string>(&if_expr[i]))
+							{
+								i++;
+								int val = m_int_values.at(*rhs);
+								auto it2 = find(m_int_name.begin(), m_int_name.end(), *rhs);
+								if (val1 != val)
+									m_values.push_back(1);
+								else
+									m_values.push_back(0);
+							}
+						}
+						else if (log_val == 4)
+						{
+							if (auto rhs = std::get_if<int>(&if_expr[i]))
+							{
+								i++;
+								if (val1>= *rhs)
+									m_values.push_back(1);
+								else
+									m_values.push_back(0);
+							}
+							else if (auto rhs = std::get_if<std::string>(&if_expr[i]))
+							{
+								i++;
+								int val = m_int_values.at(*rhs);
+								auto it2 = find(m_int_name.begin(), m_int_name.end(), *rhs);
+								if (val1 >= val)
+									m_values.push_back(1);
+								else
+									m_values.push_back(0);
+							}
+						}
+						else if (log_val == 5)
+						{
+							if (auto rhs = std::get_if<int>(&if_expr[i]))
+							{
+								i++;
+								if (val1 <= *rhs)
+									m_values.push_back(1);
+								else
+									m_values.push_back(0);
+							}
+							else if (auto rhs = std::get_if<std::string>(&if_expr[i]))
+							{
+								i++;
+								int val = m_int_values.at(*rhs);
+								auto it2 = find(m_int_name.begin(), m_int_name.end(), *rhs);
+								if (val1 <= val)
 									m_values.push_back(1);
 								else
 									m_values.push_back(0);
@@ -1044,6 +1405,14 @@ private:
 		}
 		if_expr.clear();
 	}
+	void parse_bin_expr()
+	{
+		m_bin_expr.erase(m_bin_expr.end()-1);
+		double value = evaluateExpression(m_bin_expr);
+		m_bin_expr.clear();
+		m_int_values.at(m_cur_var.value()) = value;
+	}
+
 private:
 	std::vector<std::variant<int,std::string, TokenType>> if_expr;
     std::vector<int> m_values;
@@ -1053,17 +1422,16 @@ private:
 	std::stringstream m_data;
 	std::stringstream m_bss;
 	std::stringstream m_functions;
+	std::string m_bin_expr;
 
-	struct INT_VAR
-	{
-		std::string name;
-		size_t offset;
-	};
+	std::vector<size_t> m_last_index_of_scope;
 	std::unordered_map<std::string, size_t> m_int_vars;
-	std::vector<int> m_last_index_of_scope;
 	std::vector<std::string> m_int_name;
+	std::unordered_map<std::string, int> m_int_values;
 	std::vector<std::string> m_char_vars; 
 	std::unordered_map<std::string, std::string> m_types;
+	std::optional<int> value;
+	std::optional<std::string> m_cur_var;
 
 	std::optional<NodeExpr*> temp_log_expr = nullptr;
 

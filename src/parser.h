@@ -324,7 +324,7 @@ public:
 		std::optional<Token> curr_tok = peek();
 		std::optional<int> prec;
 
-		while (true && !m_dont_interupt)
+		while (true)
 		{
 			curr_tok = peek();
 			if (curr_tok.has_value()) {
@@ -490,9 +490,8 @@ public:
 			else
 				break;
 		}
-		auto expr = m_allocator.emplace<NodeExpr>();
-		expr = expr_lhs;
-		return expr;
+
+		return expr_lhs;
 	}
 	std::optional<NodeScope*> parse_scope()
 	{
@@ -605,13 +604,6 @@ public:
 				NodeWordCharVal* val = std::get<NodeWordCharVal*>(word->var);
 				val->name = stat_eq->variableName;
 			} 
-			else if (stat_eq->type == "variable")
-			{
-				NodeTerm* word = std::get<NodeTerm*>(stat_eq->expr->var);
-				NodeTermVar* val = std::get<NodeTermVar*>(word->var);
-				val->eqName = stat_eq->variableName;
-			}
-			
 
 			stat->stat = stat_eq;
 			return stat;
@@ -777,7 +769,6 @@ public:
 
 		return prog;
 	}
-
 private:
 	void error_expected(const std::string& msg) const
 	{

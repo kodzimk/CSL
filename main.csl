@@ -2,13 +2,14 @@ int main()
 {
   char symbol = 's';
   char s = ' ';
-  int a = 0;
-  s = symbol;
-  cin(a);
-  int b = 3;
-
-  printf(symbol$n);
+  int a = 3;
+   int b = 4;
+   a = a + (2 - 1) * 4;
+   
+ if(b >= a & b == a | b >= a)
+  {
   printf(a);
+  }
 
 
   return a;
