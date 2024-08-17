@@ -136,7 +136,6 @@ label0:
 
     pop rdi
     jmp exit
-
 exit:
     mov rax, 60
     syscall

@@ -27,6 +27,7 @@ public:
 
 	}
 
+public:
 	void gen_log_expr(NodeLogExpr* expr)
 	{
 		struct LogVisitor {
@@ -502,7 +503,6 @@ public:
 				gen.m_output << "    sub rax, rbx\n";
 				gen.push("rax");
 			}
-
 			void operator()(const NodeBinExprAdd* add) 
 			{
 				gen.gen_expr(add->lhs);
@@ -537,7 +537,6 @@ public:
 				gen.m_output << "    add rax, rbx\n";
 				gen.push("rax");
 			}
-
 			void operator()(const NodeBinExprMulti* multi) 
 			{
 				gen.gen_expr(multi->lhs);
@@ -571,7 +570,6 @@ public:
 				gen.m_output << "    mul rbx\n";
 				gen.push("rax");
 			}
-
 			void operator()(const NodeBinExprDiv* div) 
 			{
 				gen.gen_expr(div->lhs);
@@ -925,42 +923,7 @@ public:
 		m_data << "newLineLen equ $ - newLineMsg\n";
 		m_data << "temp db 'a',0xA,0xD\n";
 
-		m_functions << "exit:\n";
-		m_functions << "    mov rax, 60\n";
-		m_functions << "    syscall\n";
-
-		m_functions << "_printnumberRAX:\n";
-		m_functions << "mov rcx, stringBuffer\n";
-		m_functions << "mov rbx, 10\n";
-		m_functions << "mov[rcx], rbx\n";
-		m_functions << "inc rcx\n";
-		m_functions << "mov[stringBufferPos], rcx\n";
-		m_functions << "_printnumberRAXLoop :\n";
-		m_functions << "mov rdx, 0\n";
-		m_functions << "mov rbx, 10\n";
-		m_functions << "div rbx\n";
-		m_functions << "push rax\n";
-		m_functions << "add rdx, 48\n";
-		m_functions << "mov rcx, [stringBufferPos]\n";
-		m_functions << "mov[rcx], dl\n";
-		m_functions << "inc rcx\n";
-		m_functions << "mov[stringBufferPos], rcx\n";
-		m_functions << "pop rax;\n";
-		m_functions << "cmp rax, 0\n";
-		m_functions << "jne _printnumberRAXLoop\n";
-		m_functions << "_printnumberRAXLoop2 :\n";
-		m_functions << "mov rcx, [stringBufferPos]\n";
-		m_functions << "mov rax, 1\n";
-		m_functions << "mov rdi, 1\n";
-		m_functions << "mov rsi, rcx\n";
-		m_functions << "mov rdx, 1\n";
-		m_functions << "syscall\n";
-		m_functions << "mov rcx, [stringBufferPos]\n";
-		m_functions << "dec rcx\n";
-		m_functions << "mov[stringBufferPos], rcx\n";
-		m_functions << "cmp rcx, stringBuffer\n";
-		m_functions << "jge _printnumberRAXLoop2\n";
-		m_functions << "ret\n";
+		
 		m_output << "section .text\n";
 		m_output << "global _start\n";
 		m_output << "_start:\n";
@@ -970,13 +933,48 @@ public:
 		{
 			gen_stat(prog.stats[i]);
 		}
+
+		m_output << "exit:\n";
+		m_output << "    mov rax, 60\n";
+		m_output << "    syscall\n";
+		m_output << "_printnumberRAX:\n";
+		m_output << "mov rcx, stringBuffer\n";
+		m_output << "mov rbx, 10\n";
+		m_output << "mov[rcx], rbx\n";
+		m_output << "inc rcx\n";
+		m_output << "mov[stringBufferPos], rcx\n";
+		m_output << "_printnumberRAXLoop :\n";
+		m_output << "mov rdx, 0\n";
+		m_output << "mov rbx, 10\n";
+		m_output << "div rbx\n";
+		m_output << "push rax\n";
+		m_output << "add rdx, 48\n";
+		m_output << "mov rcx, [stringBufferPos]\n";
+		m_output << "mov[rcx], dl\n";
+		m_output << "inc rcx\n";
+		m_output << "mov[stringBufferPos], rcx\n";
+		m_output << "pop rax;\n";
+		m_output << "cmp rax, 0\n";
+		m_output << "jne _printnumberRAXLoop\n";
+		m_output << "_printnumberRAXLoop2 :\n";
+		m_output << "mov rcx, [stringBufferPos]\n";
+		m_output << "mov rax, 1\n";
+		m_output << "mov rdi, 1\n";
+		m_output << "mov rsi, rcx\n";
+		m_output << "mov rdx, 1\n";
+		m_output << "syscall\n";
+		m_output << "mov rcx, [stringBufferPos]\n";
+		m_output << "dec rcx\n";
+		m_output << "mov[stringBufferPos], rcx\n";
+		m_output << "cmp rcx, stringBuffer\n";
+		m_output << "jge _printnumberRAXLoop2\n";
+		m_output << "ret\n";
+
 		std::string output = m_bss.str();
 		output += '\n';
 		output += m_data.str();
 		output += '\n';
 		output += m_output.str();
-		output += '\n';
-		output += m_functions.str();
 		return output;
 	}
 private:
@@ -1105,9 +1103,10 @@ private:
 	}
 	std::string create_label()
 	{
+		static int label_count = 0;
 		std::stringstream ss;
-		ss << "label" << m_label_count;
-		m_label_count++;
+		ss << "label" << label_count;
+		label_count++;
 		return ss.str();
 	}
 	void log_expr_or()
@@ -1486,39 +1485,39 @@ private:
 	void parse_bin_expr()
 	{
 		m_int_values.at(m_cur_var.value()) = evaluate(m_bin_expr);
-		std::cout << evaluate(m_bin_expr);
 		m_cur_var.reset();
 		m_bin_expr.clear();
 	}
-
 private:
-	std::vector<std::variant<int,std::string, TokenType>> if_expr;
-    std::vector<int> m_values;
-	size_t m_stack_size = 0;
 	NodeProg prog;
+
+	std::string m_bin_expr;
 	std::stringstream m_output;
 	std::stringstream m_data;
 	std::stringstream m_bss;
-	std::stringstream m_functions;
-	std::string m_bin_expr;
 
+	std::vector<int> m_values;
 	std::vector<int> m_paren_count;
 	std::vector<size_t> m_last_index_of_scope;
 	std::vector<std::string> m_int_name;
 	std::vector<std::string> m_char_vars; 
+	std::vector<std::variant<int, std::string, TokenType>> if_expr;
+
 	std::unordered_map<std::string, size_t> m_int_vars;
 	std::unordered_map<std::string, int> m_int_values;
 	std::unordered_map<std::string, std::string> m_types;
+
 	std::optional<int> value;
 	std::optional<std::string> m_cur_var;
-
 	std::optional<NodeExpr*> temp_log_expr = nullptr;
-	int temp = 0;
-	int m_visit_count = 0;
-	int m_label_count = 0;
-	int carry_count = 0;
+
+	size_t m_stack_size = 0;
+
 	int orCount = 0;
-	bool temp_vars = false;
+	int m_visit_count = 0;
+	int carry_count = 0;
+
 	bool if_stat = false;
+	bool temp_vars = false;
 	bool count_paren = false;
 };

@@ -216,6 +216,7 @@ public:
 
 	}
 
+public:
 	std::optional<NodeTerm*> parse_term()
 	{
 		if (auto int_lit = try_consume(TokenType::int_val))
@@ -284,10 +285,8 @@ public:
 					}
 				}
 				else {
-					m_dont_interupt = false;
 					break;
 				}
-				m_dont_interupt = true;
 				const auto [type, line, value] = consume();
 				const int next_min_prec = prec.value() + 1;
 				auto expr_rhs = parse_expr(next_min_prec);
@@ -826,12 +825,11 @@ private:
 	}
 private:
 	size_t m_index = 0;
-	std::vector<Token> m_tokens;
-	ArenaAllocator m_allocator;
-	bool m_dont_interupt = false;
 	bool count_paren = false;
+	ArenaAllocator m_allocator;
+	std::vector<Token> m_tokens;
 public:
-	std::unordered_map<std::string, std::string> m_vars;
 	int m_visit_count = 0;
 	std::vector<int> m_paren_count;
+	std::unordered_map<std::string, std::string> m_vars;
 };
