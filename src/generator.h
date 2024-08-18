@@ -18,10 +18,10 @@ using namespace std;
 class Generator
 {
 public:
-	Generator(NodeProg prog,std::unordered_map<std::string,std::string> m_types,int m_visit_count,std::vector<int> m_paren_count)
+	Generator(NodeProg prog,std::unordered_map<std::string,std::string> m_types,std::vector<int> m_visit_counts,std::vector<int> m_paren_count)
 		: prog(prog),
 		m_types(m_types),
-		m_visit_count(m_visit_count),
+		m_visit_counts(m_visit_counts),
 		m_paren_count(m_paren_count)
 	{
 
@@ -44,9 +44,21 @@ public:
 				gen.gen_expr(log_greater->lhs);
 				if (gen.if_stat)
 				{
+					if (gen.m_bin_expr.size() > 0)
+					{
+						gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
+						gen.m_bin_expr.clear();
+						gen.is_bin_expr = false;
+					}
 					gen.if_expr.push_back(TokenType::greater);
 				}
 				gen.gen_expr(log_greater->rhs);
+				if (gen.m_bin_expr.size() > 0)
+				{
+					gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
+					gen.m_bin_expr.clear();
+					gen.is_bin_expr = false;
+				}
 				gen.pop("rbx");
 				gen.pop("rax");
 				gen.m_output << "    mov rsi, 1\n";
@@ -69,6 +81,11 @@ public:
 					}
 
 					gen.gen_expr(log_greater->varAnd.value()->lhs);
+					if (gen.m_bin_expr.size() > 0)
+					{
+						gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
+						gen.m_bin_expr.clear();
+					}
 					gen.pop("rax");
 					gen.pop("rbx");
 					gen.m_output << "    mov rsi, 1\n";
@@ -100,9 +117,21 @@ public:
 				gen.gen_expr(log_lesser->lhs);
 				if (gen.if_stat)
 				{
+					if (gen.m_bin_expr.size() > 0)
+					{
+						gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
+						gen.m_bin_expr.clear();
+						gen.is_bin_expr = false;
+					}
 					gen.if_expr.push_back(TokenType::lesser);
 				}
 				gen.gen_expr(log_lesser->rhs);
+				if (gen.m_bin_expr.size() > 0)
+				{
+					gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
+					gen.m_bin_expr.clear();
+					gen.is_bin_expr = false;
+				}
 				gen.pop("rbx");
 				gen.pop("rax");
 				gen.m_output << "    mov rsi, 1\n";
@@ -156,9 +185,21 @@ public:
 				gen.gen_expr(log_equal->lhs);
 				if (gen.if_stat)
 				{
+					if (gen.m_bin_expr.size() > 0)
+					{
+						gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
+						gen.m_bin_expr.clear();
+						gen.is_bin_expr = false;
+					}
 					gen.if_expr.push_back(TokenType::equal);
 				}
 				gen.gen_expr(log_equal->rhs);
+				if (gen.m_bin_expr.size() > 0)
+				{
+					gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
+					gen.m_bin_expr.clear();
+					gen.is_bin_expr = false;
+				}
 				gen.pop("rbx");
 				gen.pop("rax");
 				gen.m_output << "    mov rsi, 1\n";
@@ -212,9 +253,21 @@ public:
 				gen.gen_expr(log_not_equal->lhs);
 				if (gen.if_stat)
 				{
+					if (gen.m_bin_expr.size() > 0)
+					{
+						gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
+						gen.m_bin_expr.clear();
+						gen.is_bin_expr = false;
+					}
 					gen.if_expr.push_back(TokenType::notequal);
 				}
 				gen.gen_expr(log_not_equal->rhs);
+				if (gen.m_bin_expr.size() > 0)
+				{
+					gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
+					gen.m_bin_expr.clear();
+					gen.is_bin_expr = false;
+				}
 				gen.pop("rbx");
 				gen.pop("rax");
 				gen.m_output << "    mov rsi, 1\n";
@@ -269,9 +322,21 @@ public:
 				gen.gen_expr(log_greater_equal->lhs);
 				if (gen.if_stat)
 				{
+					if (gen.m_bin_expr.size() > 0)
+					{
+						gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
+						gen.m_bin_expr.clear();
+						gen.is_bin_expr = false;
+					}
 					gen.if_expr.push_back(TokenType::greaterequal);
 				}
 				gen.gen_expr(log_greater_equal->rhs);
+				if (gen.m_bin_expr.size() > 0)
+				{
+					gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
+					gen.m_bin_expr.clear();
+					gen.is_bin_expr = false;
+				}
 				gen.pop("rbx");
 				gen.pop("rax");
 				gen.m_output << "    mov rsi, 1\n";
@@ -325,9 +390,21 @@ public:
 				gen.gen_expr(log_lesser_equal->lhs);
 				if (gen.if_stat)
 				{
+					if (gen.m_bin_expr.size() > 0)
+					{
+						gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
+						gen.m_bin_expr.clear();
+						gen.is_bin_expr = false;
+					}
 					gen.if_expr.push_back(TokenType::lesserequal);
 				}
 				gen.gen_expr(log_lesser_equal->rhs);
+				if (gen.m_bin_expr.size() > 0)
+				{
+					gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
+					gen.m_bin_expr.clear();
+					gen.is_bin_expr = false;
+				}
 				gen.pop("rbx");
 				gen.pop("rax");
 				gen.m_output << "    mov rsi, 1\n";
@@ -386,7 +463,7 @@ public:
 			Generator& gen;
 			void operator()(const NodeTermIntVal* int_val)
 			{
-				if (gen.if_stat)
+				if (gen.if_stat && !gen.is_bin_expr)
 				{
 					gen.if_expr.push_back(stoi(int_val->value.value()));
 				}
@@ -398,7 +475,7 @@ public:
 			{
 			if (gen.m_int_vars.contains(term_var->name))
 				{
-					if (gen.if_stat)
+					if (gen.if_stat && !gen.is_bin_expr)
 					{
 						gen.if_expr.push_back(term_var->name);
 					}
@@ -465,6 +542,7 @@ public:
 	}
 	void gen_bin_expr(NodeBinExpr* bin_expr)
 	{
+		is_bin_expr = true;
 		struct BinExprVisitor {
 			Generator& gen;
 
@@ -490,12 +568,16 @@ public:
 				gen.m_bin_expr += " - ";
 				gen.value.reset();
 				gen.gen_expr(sub->rhs);
-				gen.m_visit_count--;
+				gen.m_visit_counts[0]--;
 				if (gen.count_paren)
 					gen.m_paren_count[0]--;
 
-				if(gen.m_visit_count == 0 || gen.m_paren_count[0] == 0)
+				if (gen.m_visit_counts[0] == 0 || (gen.m_paren_count.size() > 0 && gen.m_paren_count[0] == 0))
+				{
 					gen.m_bin_expr += std::to_string(gen.value.value());
+					if(gen.m_visit_counts[0] == 0)
+					 gen.m_visit_counts.erase(gen.m_visit_counts.begin());
+				}
 
 
 				gen.pop("rbx");
@@ -525,12 +607,16 @@ public:
 					gen.value.reset(); 
 				gen.gen_expr(add->rhs);
 
-				gen.m_visit_count--;
+				gen.m_visit_counts[0]--;
 				if (gen.count_paren)
 					gen.m_paren_count[0]--;
 
-				if (gen.m_visit_count == 0 || gen.m_paren_count[0] == 0)
+				if (gen.m_visit_counts[0] == 0 || (gen.m_paren_count.size() > 0 && gen.m_paren_count[0] == 0))
+				{
 					gen.m_bin_expr += std::to_string(gen.value.value());
+					if (gen.m_visit_counts[0] == 0)
+						gen.m_visit_counts.erase(gen.m_visit_counts.begin());
+				}
 
 				gen.pop("rbx");
 				gen.pop("rax");
@@ -558,13 +644,17 @@ public:
 				gen.m_bin_expr += " * ";
 				gen.value.reset();
 				gen.gen_expr(multi->rhs);
-				gen.m_visit_count--;
+				gen.m_visit_counts[0]--;
 
 				if (gen.count_paren)
 					gen.m_paren_count[0]--;
 
-				if (gen.m_visit_count == 0 || (gen.m_paren_count.size() > 0 && gen.m_paren_count[0] == 0))
+				if (gen.m_visit_counts[0] == 0 || (gen.m_paren_count.size() > 0 && gen.m_paren_count[0] == 0))
+				{
 					gen.m_bin_expr += std::to_string(gen.value.value());
+					if (gen.m_visit_counts[0] == 0)
+						gen.m_visit_counts.erase(gen.m_visit_counts.begin());
+				}
 				gen.pop("rbx");
 				gen.pop("rax");
 				gen.m_output << "    mul rbx\n";
@@ -591,13 +681,17 @@ public:
 				gen.m_bin_expr += " / ";
 				gen.value.reset();
 				gen.gen_expr(div->rhs);
-				gen.m_visit_count--;
+				gen.m_visit_counts[0]--;
 
 				if (gen.count_paren)
 					gen.m_paren_count[0]--;
 
-				if (gen.m_visit_count == 0 || gen.m_paren_count[0] == 0)
+				if (gen.m_visit_counts[0] == 0 || (gen.m_paren_count.size() > 0 && gen.m_paren_count[0] == 0))
+				{
 					gen.m_bin_expr += std::to_string(gen.value.value());
+					if (gen.m_visit_counts[0] == 0)
+						gen.m_visit_counts.erase(gen.m_visit_counts.begin());
+				}
 				gen.pop("rbx");
 				gen.pop("rax");
 				gen.m_output << "    div rbx\n";
@@ -695,7 +789,7 @@ public:
 			void operator()(const NodeStatExit* stat_exit)
 			{
 				gen.gen_expr(stat_exit->expr);
-				
+				gen.is_bin_expr = false;
 				gen.pop("rdi");
 				gen.m_output << "    jmp exit\n";
 			}
@@ -726,6 +820,7 @@ public:
 				else if (stat_print->type == "integer" || (stat_print->variableName.has_value() && gen.m_types.contains(stat_print->variableName.value()) && gen.m_types.at(stat_print->variableName.value()) == "integer"))
 				{
 					gen.gen_expr(stat_print->expr);
+					gen.is_bin_expr = false;
 					gen.pop("rax");
 					gen.m_output << "    call _printnumberRAX\n";
 				}		
@@ -746,6 +841,7 @@ public:
 				{
 					gen.m_cur_var = stat_var->name;
 					gen.gen_expr(stat_var->expr);
+					gen.is_bin_expr = false;
 					if (!gen.m_bin_expr.empty())
 					{
 						gen.m_int_values[stat_var->name] = gen.value.value();
@@ -775,6 +871,7 @@ public:
 				{
 					gen.m_cur_var = stat_eq->variableName;
 					gen.gen_expr(stat_eq->expr);
+					gen.is_bin_expr = false;
 
 					if (!gen.m_bin_expr.empty())
 						gen.parse_bin_expr();
@@ -796,14 +893,17 @@ public:
 			void operator()(const NodeScope* scope) const
 			{
 				gen.gen_scope(scope);
+				gen.is_bin_expr = false;
 			}
 			void operator()(const NodeStatIf* stmt_if) const
 			{
 				gen.if_stat = true;
 				gen.gen_expr(stmt_if->expr);
+				gen.is_bin_expr = false;
 				while (gen.temp_log_expr != nullptr)
 				{
 					gen.gen_expr(gen.temp_log_expr.value());
+					gen.is_bin_expr = false;
 				}
 				gen.if_stat = false;
 
@@ -1492,19 +1592,20 @@ private:
 	NodeProg prog;
 
 	std::string m_bin_expr;
-	std::stringstream m_output;
-	std::stringstream m_data;
 	std::stringstream m_bss;
+	std::stringstream m_data;
+	std::stringstream m_output;
 
 	std::vector<int> m_values;
 	std::vector<int> m_paren_count;
-	std::vector<size_t> m_last_index_of_scope;
+	std::vector<int> m_visit_counts;
 	std::vector<std::string> m_int_name;
 	std::vector<std::string> m_char_vars; 
+	std::vector<size_t> m_last_index_of_scope;
 	std::vector<std::variant<int, std::string, TokenType>> if_expr;
 
-	std::unordered_map<std::string, size_t> m_int_vars;
 	std::unordered_map<std::string, int> m_int_values;
+	std::unordered_map<std::string, size_t> m_int_vars;
 	std::unordered_map<std::string, std::string> m_types;
 
 	std::optional<int> value;
@@ -1514,10 +1615,10 @@ private:
 	size_t m_stack_size = 0;
 
 	int orCount = 0;
-	int m_visit_count = 0;
 	int carry_count = 0;
 
 	bool if_stat = false;
 	bool temp_vars = false;
 	bool count_paren = false;
+	bool is_bin_expr = false;
 };

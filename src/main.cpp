@@ -29,7 +29,7 @@ int main(int argc,char** argv)
     }
 
     {
-        Generator generator(prog.value(),parser.m_vars,parser.m_visit_count,parser.m_paren_count);
+        Generator generator(prog.value(),parser.m_vars,parser.m_visit_counts,parser.m_paren_count);
         std::fstream file("out.asm", std::ios::out);
         file << generator.gen_prog();
     }

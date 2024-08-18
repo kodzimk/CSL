@@ -15,23 +15,31 @@ global _start
 _start:
    mov rax,3
    push rax
-   mov rax,4
-   push rax
    mov rax,2
    push rax
-   push QWORD [rsp + 16]
-
    mov rax,2
    push rax
     pop rbx
     pop rax
-    sub rax, rbx
+    add rax, rbx
    push rax
+   mov rax,4
+   push rax
+   push QWORD [rsp + 8]
+
+    pop rax
+    call _printnumberRAX
    mov rax,2
+   push rax
+   mov rax,4
    push rax
     pop rbx
     pop rax
     mul rbx
+   push rax
+   mov rax,2
+   push rax
+   mov rax,3
    push rax
     pop rbx
     pop rax
@@ -43,26 +51,12 @@ _start:
    push rax
     pop rbx
     pop rax
-    add rax, rbx
-   push rax
-   mov rax,4
-   push rax
-    pop rbx
-    pop rax
     mul rbx
    push rax
     pop rbx
     pop rax
-    add rax, rbx
+    sub rax, rbx
    push rax
-   push QWORD [rsp + 0]
-
-    pop rax
-    call _printnumberRAX
-   push QWORD [rsp + 8]
-
-   push QWORD [rsp + 8]
-
     pop rbx
     pop rax
     mov rsi, 1
@@ -74,10 +68,16 @@ carry_set0:
     
 mov rax,rsi
    push rax
-   push QWORD [rsp + 16]
+   push QWORD [rsp + 8]
 
-   push QWORD [rsp + 16]
+   push QWORD [rsp + 24]
 
+   mov rax,2
+   push rax
+    pop rbx
+    pop rax
+    add rax, rbx
+   push rax
     pop rbx
     pop rax
     mov rsi, 1
@@ -100,15 +100,15 @@ carry_set2:
     
 mov rax,rsi
    push rax
-   push QWORD [rsp + 16]
+   push QWORD [rsp + 8]
 
-   push QWORD [rsp + 16]
+   push QWORD [rsp + 24]
 
     pop rbx
     pop rax
     mov rsi, 1
     cmp rax, rbx
-    jge carry_set3
+    jc carry_set3
     
     mov rsi, 0
 carry_set3:
@@ -132,7 +132,7 @@ mov rax,rsi
  
 label0:
   
-   push QWORD [rsp + 0]
+   push QWORD [rsp + 8]
 
     pop rdi
     jmp exit

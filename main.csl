@@ -3,13 +3,13 @@ int main()
   char symbol = 's';
   char s = ' ';
   int a = 3;
-   int b = 4;
-   a = 2 + (a - 2) * 2 + (2 + 1) * 4;
-   printf(a);
-   
- if(b >= a & b == a | b >= a)
-  {
+  a = 2 + 2;
+  int b = 4;
   printf(a);
+   
+ if(2 * 4 >= 2 + 3 - (2 * 1) & b == a + 2 | b < a)
+  {
+    printf(a);
   }
 
 
