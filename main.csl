@@ -4,12 +4,21 @@ int main()
   char s = ' ';
   int a = 3;
   a = 2 + 2;
-  int b = 4;
+  int b = 5;
+  bool c = true;
   printf(a);
    
- if(2 * 4 >= 2 + 3 - (2 * 1) & b == a + 2 | b < a)
+ if(!c + 2 > 3 | 2 > c)
   {
     printf(a);
+  }
+  else if(2 * 4 >= a + 10)
+  {
+    printf(symbol$n);
+  }
+  else
+  {
+      printf(b);
   }
 
 

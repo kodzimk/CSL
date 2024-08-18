@@ -52,16 +52,15 @@ struct NodeBinExpr {
 	std::variant<NodeBinExprAdd*, NodeBinExprMulti*, NodeBinExprSub*, NodeBinExprDiv*> var;
 };
 
-
 struct NodeLogAnd
 {
 	NodeExpr* lhs;
 };
-
 struct NodeLogOr
 {
 	NodeExpr* lhs;
 };
+
 
 struct NodeLogExprGreater {
 	NodeExpr* lhs;
@@ -104,6 +103,7 @@ struct NodeLogExprLesserEqual {
 	std::optional<NodeLogOr*> varOr;
 };
 
+
 struct NodeLogExpr
 {
 	std::variant<NodeLogExprGreater*, NodeLogExprLesser*, NodeLogExprEqual*, NodeLogExprNotEqual*,NodeLogExprGreaterEqual*,NodeLogExprLesserEqual*,NodeLogAnd*,NodeLogOr*> var;
@@ -122,8 +122,13 @@ struct NodeStatDecrement
 	std::string variableName;
 };
 
+struct NodeTermOpposet
+{
+	std::variant <NodeTermIntVal*, NodeTermVar*> var;
+};
+
 struct NodeTerm {
-	std::variant<NodeTermIntVal*, NodeTermVar*,NodeTermParen*,NodeWordCharVal*,NodeLogExpr*> var;
+	std::variant<NodeTermIntVal*, NodeTermVar*,NodeTermParen*,NodeWordCharVal*,NodeLogExpr*,NodeTermOpposet*> var;
 };
 
 struct NodeExpr {
@@ -251,7 +256,28 @@ public:
 			term->var = term_paren;
 			return term;
 		}
-		if (auto int_lit = try_consume(TokenType::open_char))
+		else if (auto int_lit = try_consume(TokenType::opposet))
+		{
+			NodeTermOpposet* val = m_allocator.emplace<NodeTermOpposet>();
+			opposet_on = true;
+			if (auto val1 = std::get_if<NodeTerm*>(&parse_expr().value()->var))
+			{
+				if (auto val2 = std::get_if<NodeTermIntVal*>(&(*val1)->var))
+				{
+					val->var = *val2;
+				}
+				else if (auto val2 = std::get_if<NodeTermVar*>(&(*val1)->var))
+				{
+					val->var = *val2;
+				}		
+			}
+			
+			opposet_on = false;
+			NodeTerm* word = m_allocator.emplace<NodeTerm>();
+			word->var = val;
+			return word;
+		}
+		else if (auto int_lit = try_consume(TokenType::open_char))
 		{
 			NodeWordCharVal* char_val = m_allocator.emplace<NodeWordCharVal>();
 			char_val->value = consume().value;
@@ -275,7 +301,7 @@ public:
 
 		if (peek(1).has_value() && peek(1).value().type != TokenType::plus && peek(1).value().type != TokenType::minus)
 		{
-			while (true) {
+			while (true && !opposet_on) {
 				std::optional<Token> curr_tok = peek();
 				std::optional<int> prec;
 				if (curr_tok.has_value()) {
@@ -340,7 +366,7 @@ public:
 		std::optional<Token> curr_tok = peek();
 		std::optional<int> prec;
 
-		while (true && !bin_expr)
+		while (true && !bin_expr && !opposet_on)
 		{
 			curr_tok = peek();
 			if (curr_tok.has_value()) {
@@ -986,6 +1012,7 @@ private:
 	size_t m_index = 0;
 	bool bin_expr = false;
 	bool count_paren = false;
+	bool opposet_on = false;
 	ArenaAllocator m_allocator;
 	std::vector<Token> m_tokens;
 public:

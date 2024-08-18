@@ -36,6 +36,9 @@ enum TokenType
 	 AND,
 	 boolean,
 	 INPUT,
+	 opposet,
+	 FALSE,
+	 TRUE,
 };
 inline std::string to_string(const TokenType type)
 {
@@ -174,6 +177,16 @@ public:
 					tokens.push_back({ .type = TokenType::MAIN });
 					str.clear();
 				}
+				else if (str == "false")
+				{
+					tokens.push_back({ .type = TokenType::int_val,.value = std::to_string(0) });
+					str.clear();
+				}
+				else if (str == "true")
+				{
+					tokens.push_back({ .type = TokenType::int_val,.value = std::to_string(1) });
+					str.clear();
+				}
 				else if (str == "cin")
 				{
 					tokens.push_back({ .type = TokenType::INPUT });
@@ -203,6 +216,12 @@ public:
 			else if (peek().value()[0] == ' ')
 			{
 				consume();
+				continue;
+			}
+			else if (peek().value()[0] == '!')
+			{
+				tokens.push_back({ .type = TokenType::opposet });
+				consume();			
 				continue;
 			}
 			else if (peek().value()[0] == '>')
