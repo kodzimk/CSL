@@ -18,7 +18,7 @@ using namespace std;
 class Generator
 {
 public:
-	Generator(NodeProg prog,std::unordered_map<std::string,std::string> m_types,std::vector<int> m_visit_counts,std::vector<int> m_paren_count)
+	Generator(NodeProg prog, std::unordered_map<std::string, std::string> m_types, std::vector<int> m_visit_counts, std::vector<int> m_paren_count)
 		: prog(prog),
 		m_types(m_types),
 		m_visit_counts(m_visit_counts),
@@ -34,16 +34,15 @@ public:
 			Generator& gen;
 			void operator()(const NodeLogOr* log_or)
 			{
-				
+
 			}
 			void operator()(const NodeLogAnd* log_and)
 			{
-				
+
 			}
 			void operator()(const NodeLogExprParen* log_paren)
 			{
 				gen.temp_log_expr = nullptr;
-				gen.if_expr.push_back(TokenType::open_paren);
 				gen.gen_expr(log_paren->lhs);
 				gen.m_bin_expr.clear();
 				while (gen.temp_log_expr != nullptr)
@@ -51,7 +50,6 @@ public:
 					gen.gen_expr(gen.temp_log_expr.value());
 					gen.is_bin_expr = false;
 				}
-				gen.if_expr.push_back(TokenType::close_paren);
 				if (log_paren->varAnd.has_value())
 				{
 					if (gen.if_stat)
@@ -116,7 +114,7 @@ public:
 				gen.m_output << "    mov rsi, 1\n";
 				gen.m_output << "    cmp rbx, rax\n";
 				gen.m_output << "    jc carry_set" << std::to_string(gen.carry_count) << "\n";
-				
+
 				gen.m_output << "    \n";
 				gen.m_output << "    mov rsi, 0\n";
 				gen.m_output << "carry_set" << std::to_string(gen.carry_count) << ":\n";
@@ -601,7 +599,7 @@ public:
 			}
 			void operator()(const NodeTermVar* term_var)
 			{
-			if (gen.m_int_vars.contains(term_var->name))
+				if (gen.m_int_vars.contains(term_var->name))
 				{
 					if (gen.if_stat && !gen.is_bin_expr)
 					{
@@ -613,9 +611,9 @@ public:
 					offset << "QWORD [rsp + " << (gen.m_stack_size - var - 1) * 8 << "]\n";
 					gen.push(offset.str());
 				}
-				else if(find(gen.m_char_vars.begin(), gen.m_char_vars.end(),term_var->eqName) == gen.m_char_vars.end() && find(gen.m_char_vars.begin(), gen.m_char_vars.end(), term_var->name) != gen.m_char_vars.end())
+				else if (find(gen.m_char_vars.begin(), gen.m_char_vars.end(), term_var->eqName) == gen.m_char_vars.end() && find(gen.m_char_vars.begin(), gen.m_char_vars.end(), term_var->name) != gen.m_char_vars.end())
 				{
-					std::vector<std::string> s = { "'","s","'"};
+					std::vector<std::string> s = { "'","s","'" };
 					gen.m_data << term_var->eqName << " db " << s[0] << s[1] << s[2] << "\n";
 					gen.m_char_vars.push_back(term_var->eqName);
 
@@ -631,19 +629,21 @@ public:
 				}
 				else
 				{
-				        gen.value = stoi(term_var->value.value());
-						gen.m_output << "   mov rax, " <<  term_var->value.value() << '\n';
-						gen.push("rax");
-					
+					gen.value = stoi(term_var->value.value());
+					gen.m_output << "   mov rax, " << term_var->value.value() << '\n';
+					gen.push("rax");
+
 				}
 			}
 			void operator()(NodeTermParen* term_paren)
 			{
+				gen.if_expr.push_back(TokenType::open_paren);
 				gen.current_paren++;
 				gen.count_paren = true;
-				gen.m_bin_expr += "( ";
+				gen.m_bin_expr += "(";
 				gen.gen_expr(term_paren->expr);
-				gen.m_bin_expr += "  )";
+				gen.m_bin_expr += ")";
+				gen.if_expr.push_back(TokenType::close_paren);
 				gen.m_paren_count.erase(gen.m_paren_count.begin() + gen.current_paren);
 				gen.current_paren--;
 				gen.count_paren = false;
@@ -676,7 +676,7 @@ public:
 		struct BinExprVisitor {
 			Generator& gen;
 
-			void operator()(const NodeBinExprSub* sub) 
+			void operator()(const NodeBinExprSub* sub)
 			{
 				gen.gen_expr(sub->lhs);
 				if (gen.m_bin_expr.size() > 0)
@@ -695,7 +695,7 @@ public:
 				else
 					gen.m_bin_expr += std::to_string(gen.value.value());
 
-				gen.m_bin_expr += " - ";
+				gen.m_bin_expr += "-";
 				gen.value.reset();
 				gen.gen_expr(sub->rhs);
 				gen.m_visit_counts[0]--;
@@ -705,8 +705,8 @@ public:
 				if (gen.m_visit_counts[0] == 0 || (gen.m_paren_count.size() > 0 && gen.m_paren_count[gen.current_paren] == 0))
 				{
 					gen.m_bin_expr += std::to_string(gen.value.value());
-					if(gen.m_visit_counts[0] == 0)
-					 gen.m_visit_counts.erase(gen.m_visit_counts.begin());
+					if (gen.m_visit_counts[0] == 0)
+						gen.m_visit_counts.erase(gen.m_visit_counts.begin());
 				}
 
 
@@ -715,7 +715,7 @@ public:
 				gen.m_output << "    sub rax, rbx\n";
 				gen.push("rax");
 			}
-			void operator()(const NodeBinExprAdd* add) 
+			void operator()(const NodeBinExprAdd* add)
 			{
 				gen.gen_expr(add->lhs);
 				if (gen.m_bin_expr.size() > 0)
@@ -733,8 +733,8 @@ public:
 				}
 				else
 					gen.m_bin_expr += std::to_string(gen.value.value());
-					gen.m_bin_expr += " + ";
-					gen.value.reset(); 
+				gen.m_bin_expr += "+";
+				gen.value.reset();
 				gen.gen_expr(add->rhs);
 
 				gen.m_visit_counts[0]--;
@@ -753,7 +753,7 @@ public:
 				gen.m_output << "    add rax, rbx\n";
 				gen.push("rax");
 			}
-			void operator()(const NodeBinExprMulti* multi) 
+			void operator()(const NodeBinExprMulti* multi)
 			{
 				gen.gen_expr(multi->lhs);
 				if (gen.m_bin_expr.size() > 0)
@@ -771,7 +771,7 @@ public:
 				}
 				else
 					gen.m_bin_expr += std::to_string(gen.value.value());
-				gen.m_bin_expr += " * ";
+				gen.m_bin_expr += "*";
 				gen.value.reset();
 				gen.gen_expr(multi->rhs);
 				gen.m_visit_counts[0]--;
@@ -790,7 +790,7 @@ public:
 				gen.m_output << "    mul rbx\n";
 				gen.push("rax");
 			}
-			void operator()(const NodeBinExprDiv* div) 
+			void operator()(const NodeBinExprDiv* div)
 			{
 				gen.gen_expr(div->lhs);
 				if (gen.m_bin_expr.size() > 0)
@@ -808,7 +808,7 @@ public:
 				}
 				else
 					gen.m_bin_expr += std::to_string(gen.value.value());
-				gen.m_bin_expr += " / ";
+				gen.m_bin_expr += "/";
 				gen.value.reset();
 				gen.gen_expr(div->rhs);
 				gen.m_visit_counts[0]--;
@@ -942,15 +942,15 @@ public:
 				else if (stat_print->type == "character")
 				{
 					NodeTerm* term = std::get<NodeTerm*>(stat_print->expr->var);
-						NodeWordCharVal* val = std::get<NodeWordCharVal*>(term->var);
+					NodeWordCharVal* val = std::get<NodeWordCharVal*>(term->var);
 
-						gen.m_output << "    mov [temp],"<<"dword '"<< val->value.value() <<"'" <<"\n";
-						gen.m_output << "    mov rax,1" << "\n";
-						gen.m_output << "    mov rsi,temp" << "\n";
-						gen.m_output << "    mov rdi,1" << "\n";
-						gen.m_output << "    mov rdx,1" << "\n";
-						gen.m_output << "    syscall\n";
-						gen.m_output << "    \n";
+					gen.m_output << "    mov [temp]," << "dword '" << val->value.value() << "'" << "\n";
+					gen.m_output << "    mov rax,1" << "\n";
+					gen.m_output << "    mov rsi,temp" << "\n";
+					gen.m_output << "    mov rdi,1" << "\n";
+					gen.m_output << "    mov rdx,1" << "\n";
+					gen.m_output << "    syscall\n";
+					gen.m_output << "    \n";
 				}
 				else if (stat_print->type == "integer" || (stat_print->variableName.has_value() && gen.m_types.contains(stat_print->variableName.value()) && gen.m_types.at(stat_print->variableName.value()) == "integer"))
 				{
@@ -958,8 +958,8 @@ public:
 					gen.is_bin_expr = false;
 					gen.pop("rax");
 					gen.m_output << "    call _printnumberRAX\n";
-				}		
-			    
+				}
+
 				if (stat_print->newLine)
 				{
 					gen.m_output << "    mov edx,newLineLen" << "\n";
@@ -982,7 +982,7 @@ public:
 						gen.m_int_values[stat_var->name] = gen.value.value();
 						gen.parse_bin_expr();
 					}
-					else if(stat_var->type != "character")
+					else if (stat_var->type != "character")
 						gen.m_int_values[stat_var->name] = gen.value.value();
 
 					if (stat_var->type != "character")
@@ -1003,7 +1003,7 @@ public:
 			}
 			void operator()(const NodeStateEq* stat_eq)
 			{
-				if (gen.m_int_vars.contains(stat_eq->variableName) || find(gen.m_char_vars.begin(), gen.m_char_vars.end(),stat_eq->variableName) != gen.m_char_vars.end())
+				if (gen.m_int_vars.contains(stat_eq->variableName) || find(gen.m_char_vars.begin(), gen.m_char_vars.end(), stat_eq->variableName) != gen.m_char_vars.end())
 				{
 					gen.m_cur_var = stat_eq->variableName;
 					gen.gen_expr(stat_eq->expr);
@@ -1013,12 +1013,12 @@ public:
 						gen.parse_bin_expr();
 					else
 						gen.m_int_values.at(stat_eq->variableName) = gen.value.value();
-					
-					if(gen.m_int_vars.contains(stat_eq->variableName))
+
+					if (gen.m_int_vars.contains(stat_eq->variableName))
 					{
-						gen.m_int_vars.at(stat_eq->variableName) = gen.m_stack_size-1;
+						gen.m_int_vars.at(stat_eq->variableName) = gen.m_stack_size - 1;
 						gen.value = NULL;
-                    }
+					}
 				}
 				else
 				{
@@ -1052,13 +1052,13 @@ public:
 				gen.m_output << "    je " << label << "\n";
 				gen.m_output << " \n";
 
-					gen.parse_log_expr();
-					gen.m_bin_expr.clear();
+				gen.parse_log_expr();
+				gen.m_bin_expr.clear();
 				if (gen.m_values[0] == 1)
 				{
-						gen.m_values.clear();
-						gen.gen_scope(stmt_if->scope);
-						gen.m_output << label << ":\n";
+					gen.m_values.clear();
+					gen.gen_scope(stmt_if->scope);
+					gen.m_output << label << ":\n";
 				}
 				else if (stmt_if->pred.has_value()) {
 					gen.m_values.clear();
@@ -1088,7 +1088,7 @@ public:
 					gen.m_int_vars.at(inc->variableName) = gen.m_stack_size - 1;
 					int value = gen.m_int_values.at(inc->variableName);
 					value++;
-		            gen.m_int_values.at(inc->variableName) = value;
+					gen.m_int_values.at(inc->variableName) = value;
 					gen.value = NULL;
 				}
 				else
@@ -1142,7 +1142,7 @@ public:
 					gen.m_output << "    syscall\n";
 
 					gen.m_output << "    mov rax,[inputNumbers]\n";
-					gen.m_output << "    mov ["<<stat_input->name <<"],rax\n";
+					gen.m_output << "    mov [" << stat_input->name << "],rax\n";
 				}
 				else
 				{
@@ -1163,11 +1163,11 @@ public:
 		m_data << "newLineLen equ $ - newLineMsg\n";
 		m_data << "temp db 'a',0xA,0xD\n";
 
-		
+
 		m_output << "section .text\n";
 		m_output << "global _start\n";
 		m_output << "_start:\n";
-		
+
 
 		for (int i = 0; i < prog.stats.size(); i++)
 		{
@@ -1351,29 +1351,30 @@ private:
 	}
 	void log_expr_or()
 	{
-			for (int i = 0; i < orCount; i++)
-			{
-				pop("rax");
-				pop("rbx");
-				m_output << "    mov rsi, 1\n";
-				m_output << "    or rax, rbx\n";
-				m_output << "    jne carry_set" << std::to_string(carry_count) << "\n";
+		for (int i = 0; i < orCount; i++)
+		{
+			pop("rax");
+			pop("rbx");
+			m_output << "    mov rsi, 1\n";
+			m_output << "    or rax, rbx\n";
+			m_output << "    jne carry_set" << std::to_string(carry_count) << "\n";
 
-				m_output << "    \n";
-				m_output << "    mov rsi, 0\n";
-				m_output << "    carry_set" << std::to_string(carry_count) << ":\n";
-				m_output << "    \n";
+			m_output << "    \n";
+			m_output << "    mov rsi, 0\n";
+			m_output << "    carry_set" << std::to_string(carry_count) << ":\n";
+			m_output << "    \n";
 
-				m_output << "mov rax,rsi\n";
-				push("rax");
-				carry_count++;
-			}
+			m_output << "mov rax,rsi\n";
+			push("rax");
+			carry_count++;
+		}
 		orCount = 0;
 	}
 	void parse_log_expr()
 	{
 		if (if_expr.size() > 1)
 		{
+			bool is_paren = false;
 			TokenType andOr = TokenType::integer;
 			for (int i = 0; i < if_expr.size() - 2; i++)
 			{
@@ -1469,7 +1470,9 @@ private:
 				}
 				else if (auto open_paren = std::get_if<TokenType>(&if_expr[i]))
 				{
+					is_paren = true;
 					i++;
+					TokenType tempandOr = TokenType::integer;
 					std::vector<int> temp_values;
 					for (int j = i; i < if_expr.size() - 2; i++)
 					{
@@ -1569,7 +1572,7 @@ private:
 							exit(EXIT_FAILURE);
 						}
 
-						if (temp_values.size() > 1 && andOr == TokenType::AND)
+						if (temp_values.size() > 1 && tempandOr == TokenType::AND)
 						{
 							if (temp_values[temp_values.size() - 1] == 1 && temp_values[temp_values.size() - 2] == 1)
 							{
@@ -1607,10 +1610,10 @@ private:
 							{
 								if (*log == TokenType::AND || *log == TokenType::OR)
 								{
-									andOr = *log;
-								
+									tempandOr = *log;
+
 								}
-								else 
+								else
 								{
 									std::cerr << "Invalid expr!]\n";
 									exit(EXIT_FAILURE);
@@ -1638,6 +1641,88 @@ private:
 						m_values.push_back(0);
 					}
 				}
+				else if (m_values.size() > 1 && log_prec(andOr).has_value())
+				{
+					int a = log_prec(andOr).value();
+					if (a == 0)
+					{
+						if (m_values[m_values.size() - 1] <  m_values[m_values.size() - 2])
+						{
+							m_values.erase(m_values.end() - 2, m_values.end());
+							m_values.push_back(1);
+						}
+						else
+						{
+							m_values.erase(m_values.end() - 2, m_values.end());
+							m_values.push_back(0);
+						}
+					}
+					if (a == 1)
+					{
+						if (m_values[m_values.size() - 1] > m_values[m_values.size() - 2])
+						{
+							m_values.erase(m_values.end() - 2, m_values.end());
+							m_values.push_back(1);
+						}
+						else
+						{
+							m_values.erase(m_values.end() - 2, m_values.end());
+							m_values.push_back(0);
+						}
+					}
+					if (a == 2)
+					{
+						if (m_values[m_values.size() - 1] == m_values[m_values.size() - 2])
+						{
+							m_values.erase(m_values.end() - 2, m_values.end());
+							m_values.push_back(1);
+						}
+						else
+						{
+							m_values.erase(m_values.end() - 2, m_values.end());
+							m_values.push_back(0);
+						}
+					}
+					if (a == 3)
+					{
+						if (m_values[m_values.size() - 1] != m_values[m_values.size() - 2])
+						{
+							m_values.erase(m_values.end() - 2, m_values.end());
+							m_values.push_back(1);
+						}
+						else
+						{
+							m_values.erase(m_values.end() - 2, m_values.end());
+							m_values.push_back(0);
+						}
+					}
+					if (a == 4)
+					{
+						if (m_values[m_values.size() - 1] <= m_values[m_values.size() - 2])
+						{
+							m_values.erase(m_values.end() - 2, m_values.end());
+							m_values.push_back(1);
+						}
+						else
+						{
+							m_values.erase(m_values.end() - 2, m_values.end());
+							m_values.push_back(0);
+						}
+					}
+					if (a == 5)
+					{
+						if (m_values[m_values.size() - 1] >= m_values[m_values.size() - 2])
+						{
+							m_values.erase(m_values.end() - 2, m_values.end());
+							m_values.push_back(1);
+						}
+						else
+						{
+							m_values.erase(m_values.end() - 2, m_values.end());
+							m_values.push_back(0);
+						}
+					}
+				}
 
 				if (i < if_expr.size())
 				{
@@ -1646,6 +1731,11 @@ private:
 						if (*log == TokenType::AND || *log == TokenType::OR)
 						{
 							andOr = *log;
+						}
+						else if (is_paren && log_prec(*log).has_value())
+						{
+							andOr = *log;
+							is_paren = false;
 						}
 						else
 						{
@@ -1702,7 +1792,7 @@ private:
 	std::vector<int> m_paren_count;
 	std::vector<int> m_visit_counts;
 	std::vector<std::string> m_int_name;
-	std::vector<std::string> m_char_vars; 
+	std::vector<std::string> m_char_vars;
 	std::vector<size_t> m_last_index_of_scope;
 	std::vector<std::variant<int, std::string, TokenType>> if_expr;
 

@@ -3,11 +3,12 @@ int main()
   char symbol = 's';
   char s = ' ';
   int a = 3;
-  a = 2;
+  a = 2 + 2;
   int b = 5;
   bool c = true;
+  printf(a);
   
-  if((2 > 1 * 2) | (2 < 1 | 1 != 0) & 1 > 1)
+  if((2 > 1 * 1) < (a < 3 & 1 != 1)  | 1 > 1)
   {
     printf(a);
   }

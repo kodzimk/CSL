@@ -115,7 +115,7 @@ struct NodeLogExprParen
 
 struct NodeLogExpr
 {
-	std::variant<NodeLogExprGreater*, NodeLogExprLesser*, NodeLogExprEqual*, NodeLogExprNotEqual*,NodeLogExprGreaterEqual*,NodeLogExprLesserEqual*,NodeLogAnd*,NodeLogOr*,NodeLogExprParen*> var;
+	std::variant<NodeLogExprGreater*, NodeLogExprLesser*, NodeLogExprEqual*, NodeLogExprNotEqual*, NodeLogExprGreaterEqual*, NodeLogExprLesserEqual*, NodeLogAnd*, NodeLogOr*, NodeLogExprParen*> var;
 };
 
 
@@ -137,11 +137,11 @@ struct NodeTermOpposet
 };
 
 struct NodeTerm {
-	std::variant<NodeTermIntVal*, NodeTermVar*,NodeTermParen*,NodeWordCharVal*,NodeLogExpr*,NodeTermOpposet*> var;
+	std::variant<NodeTermIntVal*, NodeTermVar*, NodeTermParen*, NodeWordCharVal*, NodeLogExpr*, NodeTermOpposet*> var;
 };
 
 struct NodeExpr {
-	std::variant<NodeTerm*, NodeBinExpr*,NodeLogExpr*> var;
+	std::variant<NodeTerm*, NodeBinExpr*, NodeLogExpr*> var;
 };
 
 struct NodeStmtExit {
@@ -211,7 +211,7 @@ struct NodeStatExit
 
 struct NodeStat
 {
-	std::variant<NodeStatExit*,NodeStatVar*,NodeStateEq*,NodeStatPrint*,NodeScope*, NodeStatIf*,NodeStatIncerement*, NodeStatDecrement*,NodeStatInput*> stat;
+	std::variant<NodeStatExit*, NodeStatVar*, NodeStateEq*, NodeStatPrint*, NodeScope*, NodeStatIf*, NodeStatIncerement*, NodeStatDecrement*, NodeStatInput*> stat;
 };
 
 struct NodeProg
@@ -279,9 +279,9 @@ public:
 				else if (auto val2 = std::get_if<NodeTermVar*>(&(*val1)->var))
 				{
 					val->var = *val2;
-				}		
+				}
 			}
-			
+
 			opposet_on = false;
 			NodeTerm* word = m_allocator.emplace<NodeTerm>();
 			word->var = val;
@@ -654,7 +654,7 @@ public:
 					}
 
 				}
-				else if(curr_tok->type == TokenType::AND && m_tokens[m_index - 1].type == TokenType::close_paren)
+				else if (curr_tok->type == TokenType::AND && m_tokens[m_index - 1].type == TokenType::close_paren)
 				{
 					NodeLogExpr* log_expr = m_allocator.emplace<NodeLogExpr>();
 					NodeLogExprParen* log_paren = m_allocator.emplace<NodeLogExprParen>();
@@ -689,15 +689,15 @@ public:
 						m_visit_counts.push_back(m_visit_count);
 					}
 					m_visit_count = 0;
-						consume();
-						NodeLogOr* log_or = m_allocator.emplace<NodeLogOr>();
-						log_or->lhs = parse_expr().value();
-						if (m_visit_count != 0)
-						{
-							m_visit_counts.push_back(m_visit_count);
-						}
-						m_visit_count = 0;
-						log_paren->varOr = log_or;
+					consume();
+					NodeLogOr* log_or = m_allocator.emplace<NodeLogOr>();
+					log_or->lhs = parse_expr().value();
+					if (m_visit_count != 0)
+					{
+						m_visit_counts.push_back(m_visit_count);
+					}
+					m_visit_count = 0;
+					log_paren->varOr = log_or;
 
 					log_expr->var = log_paren;
 					expr_lhs->var = log_expr;
@@ -776,7 +776,7 @@ public:
 	}
 	std::optional<NodeStat*> parse_stat()
 	{
-		if (peek().has_value() && peek().value().type == TokenType::ret && peek(1).has_value() && 
+		if (peek().has_value() && peek().value().type == TokenType::ret && peek(1).has_value() &&
 			(peek(1).value().type == TokenType::int_val || peek(1).value().type == TokenType::variable))
 		{
 			consume();
@@ -787,7 +787,7 @@ public:
 			{
 				m_visit_counts.push_back(m_visit_count);
 			}
-				m_visit_count = 0;
+			m_visit_count = 0;
 			consume();
 			bin_expr = false;
 			stat->stat = stat_exit;
@@ -802,7 +802,7 @@ public:
 			stat_var->type = "int";
 			std::string type = to_string(peek(2).value().type);
 
-			if (type == "character" || (type == "variable" && m_vars.contains(peek(2).value().value.value())&& m_vars.at(peek(2).value().value.value()) != "integer"))
+			if (type == "character" || (type == "variable" && m_vars.contains(peek(2).value().value.value()) && m_vars.at(peek(2).value().value.value()) != "integer"))
 			{
 				std::cerr << "Invalid value!!" << std::endl;
 				exit(EXIT_FAILURE);
@@ -815,20 +815,19 @@ public:
 			{
 				m_visit_counts.push_back(m_visit_count);
 			}
-				m_visit_count = 0;
+			m_visit_count = 0;
 			consume();
 			bin_expr = false;
-			
+
 			m_vars[stat_var->name] = "integer";
 			stat->stat = stat_var;
 			return stat;
 		}
-		else if (peek().has_value() && peek().value().type == TokenType::variable && peek(1).has_value() && peek(1).value().type == TokenType::eq 
-			&& peek(2).has_value() && (peek(2).value().type == TokenType::int_val || peek(2).value().type == TokenType::variable || peek(2).value().type == TokenType::open_char))
+		else if (peek().has_value() && peek().value().type == TokenType::variable && peek(1).has_value() && peek(1).value().type == TokenType::eq
+			&& peek(2).has_value() && (peek(2).value().type == TokenType::int_val || peek(2).value().type == TokenType::variable || peek(2).value().type == TokenType::open_char || peek(2).value().type == open_paren))
 		{
-			if 	((peek(2).value().value.has_value() && m_vars.contains(peek(2).value().value.value()) &&
-				m_vars.contains(peek().value().value.value()) && m_vars.at(peek().value().value.value()) != m_vars.at(peek(2).value().value.value())) ||
-				(to_string(peek(2).value().type) != "variable" && m_vars.at(peek().value().value.value()) != to_string(peek(2).value().type)))
+			if ((peek(2).value().value.has_value() && m_vars.contains(peek(2).value().value.value()) &&  m_vars.at(peek().value().value.value()) != m_vars.at(peek(2).value().value.value())) &&
+				(to_string(peek(2).value().type) == "variable" && m_vars.at(peek().value().value.value()) != to_string(peek(2).value().type)) && to_string(peek(2).value().type) != "open_paren")
 			{
 				std::cerr << "Invalid value!!" << std::endl;
 				exit(EXIT_FAILURE);
@@ -839,12 +838,12 @@ public:
 			stat_eq->type = to_string(peek(2).value().type);
 			stat_eq->variableName = consume().value.value();
 			consume();
-			stat_eq->expr = parse_expr().value();      
+			stat_eq->expr = parse_expr().value();
 			if (m_visit_count != 0)
 			{
 				m_visit_counts.push_back(m_visit_count);
 			}
-				m_visit_count = 0;
+			m_visit_count = 0;
 			consume();
 			bin_expr = false;
 			if (stat_eq->type == "character")
@@ -852,14 +851,14 @@ public:
 				NodeTerm* word = std::get<NodeTerm*>(stat_eq->expr->var);
 				NodeWordCharVal* val = std::get<NodeWordCharVal*>(word->var);
 				val->name = stat_eq->variableName;
-			} 
+			}
 
 			stat->stat = stat_eq;
 			return stat;
 		}
 		else if (peek().has_value() && peek().value().type == TokenType::character && peek(1).has_value() && peek(1).value().type == TokenType::variable &&
 			peek(2).has_value() && peek(2).value().type == TokenType::eq)
-		{		
+		{
 			consume();
 			NodeStat* stat = m_allocator.emplace<NodeStat>();
 			NodeStatVar* stat_var = m_allocator.emplace<NodeStatVar>();
@@ -913,15 +912,15 @@ public:
 			NodeStat* stat = m_allocator.emplace<NodeStat>();
 			NodeStatPrint* stat_print = m_allocator.emplace<NodeStatPrint>();
 			stat_print->type = to_string(peek().value().type);
-			if(peek().value().value.has_value())
-			   stat_print->variableName = peek().value().value.value();
+			if (peek().value().value.has_value())
+				stat_print->variableName = peek().value().value.value();
 
 			stat_print->expr = parse_expr().value();
 			if (m_visit_count != 0)
 			{
 				m_visit_counts.push_back(m_visit_count);
 			}
-				m_visit_count = 0;
+			m_visit_count = 0;
 			stat->stat = stat_print;
 			bin_expr = false;
 
@@ -951,7 +950,7 @@ public:
 				std::cerr << "Invalid expression" << std::endl;
 				exit(EXIT_FAILURE);
 			}
-				try_consume(TokenType::close_paren, "Expected `)`");			
+			try_consume(TokenType::close_paren, "Expected `)`");
 			if (const auto scope = parse_scope()) {
 				stmt_if->scope = scope.value();
 			}
@@ -965,57 +964,57 @@ public:
 		}
 		else if (peek().has_value() && peek().value().type == TokenType::variable && peek(1).has_value() && peek(1).value().type == TokenType::plus &&
 			peek(2).has_value() && peek(2).value().type == TokenType::plus)
-			{
-				NodeStat* stat = m_allocator.emplace<NodeStat>();
-				NodeStatIncerement* inc = m_allocator.emplace<NodeStatIncerement>();
-				inc->expr = parse_expr().value();
-				consume();
-				consume();
-				consume();
+		{
+			NodeStat* stat = m_allocator.emplace<NodeStat>();
+			NodeStatIncerement* inc = m_allocator.emplace<NodeStatIncerement>();
+			inc->expr = parse_expr().value();
+			consume();
+			consume();
+			consume();
 
-					NodeTerm* word = std::get<NodeTerm*>(inc->expr->var);
-					NodeTermVar* val = std::get<NodeTermVar*>(word->var);
-					inc->variableName  = val->name;
-				
+			NodeTerm* word = std::get<NodeTerm*>(inc->expr->var);
+			NodeTermVar* val = std::get<NodeTermVar*>(word->var);
+			inc->variableName = val->name;
 
-				stat->stat = inc;
-				return stat;
-			}
+
+			stat->stat = inc;
+			return stat;
+		}
 		else if (peek().has_value() && peek().value().type == TokenType::variable && peek(1).has_value() && peek(1).value().type == TokenType::minus &&
 			peek(2).has_value() && peek(2).value().type == TokenType::minus)
-			{
-				NodeStat* stat = m_allocator.emplace<NodeStat>();
-				NodeStatDecrement* inc = m_allocator.emplace<NodeStatDecrement>();
-				inc->expr = parse_expr().value();
-				consume();
-				consume();
-				consume();
+		{
+			NodeStat* stat = m_allocator.emplace<NodeStat>();
+			NodeStatDecrement* inc = m_allocator.emplace<NodeStatDecrement>();
+			inc->expr = parse_expr().value();
+			consume();
+			consume();
+			consume();
 
-				NodeTerm* word = std::get<NodeTerm*>(inc->expr->var);
-				NodeTermVar* val = std::get<NodeTermVar*>(word->var);
-				inc->variableName = val->name;
+			NodeTerm* word = std::get<NodeTerm*>(inc->expr->var);
+			NodeTermVar* val = std::get<NodeTermVar*>(word->var);
+			inc->variableName = val->name;
 
 
-				stat->stat = inc;
-				return stat;
-			}
+			stat->stat = inc;
+			return stat;
+		}
 		else if (peek().has_value() && peek().value().type == TokenType::INPUT && peek(1).has_value() && peek(1).value().type == TokenType::open_paren &&
 			peek(2).has_value() && peek(2).value().type == TokenType::variable)
-			{
-				consume();
-				consume();
-				NodeStatInput* stat_input = m_allocator.emplace<NodeStatInput>();
-				stat_input->expr = parse_expr().value();
-				NodeTerm* term = std::get<NodeTerm*>(stat_input->expr->var);
-				NodeTermVar* var = std::get<NodeTermVar*>(term->var);
-				stat_input->name = var->name;		
+		{
+			consume();
+			consume();
+			NodeStatInput* stat_input = m_allocator.emplace<NodeStatInput>();
+			stat_input->expr = parse_expr().value();
+			NodeTerm* term = std::get<NodeTerm*>(stat_input->expr->var);
+			NodeTermVar* var = std::get<NodeTermVar*>(term->var);
+			stat_input->name = var->name;
 
-				NodeStat* stat = m_allocator.emplace<NodeStat>();
-				stat->stat = stat_input;
-				consume();
-				consume();
-				return stat;
-			}
+			NodeStat* stat = m_allocator.emplace<NodeStat>();
+			stat->stat = stat_input;
+			consume();
+			consume();
+			return stat;
+		}
 
 		return {};
 	}

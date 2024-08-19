@@ -50,7 +50,7 @@ inline std::string to_string(const TokenType type)
 	case TokenType::semi:
 		return "`;`";
 	case TokenType::open_paren:
-		return "`(`";
+		return "open_paren";
 	case TokenType::close_paren:
 		return "`)`";
 	case TokenType::integer:
