@@ -26,6 +26,7 @@ struct NodeExpr;
 
 struct NodeTermParen {
 	NodeExpr* expr;
+	TokenType type;
 };
 
 struct NodeBinExprAdd {
@@ -103,10 +104,18 @@ struct NodeLogExprLesserEqual {
 	std::optional<NodeLogOr*> varOr;
 };
 
+struct NodeLogExprParen
+{
+	NodeExpr* lhs;
+	NodeExpr* rhs;
+	std::optional<NodeLogAnd*> varAnd;
+	std::optional<NodeLogOr*> varOr;
+};
+
 
 struct NodeLogExpr
 {
-	std::variant<NodeLogExprGreater*, NodeLogExprLesser*, NodeLogExprEqual*, NodeLogExprNotEqual*,NodeLogExprGreaterEqual*,NodeLogExprLesserEqual*,NodeLogAnd*,NodeLogOr*> var;
+	std::variant<NodeLogExprGreater*, NodeLogExprLesser*, NodeLogExprEqual*, NodeLogExprNotEqual*,NodeLogExprGreaterEqual*,NodeLogExprLesserEqual*,NodeLogAnd*,NodeLogOr*,NodeLogExprParen*> var;
 };
 
 
@@ -249,6 +258,7 @@ public:
 				error_expected("expression");
 			}
 			count_paren = false;
+			bin_expr = false;
 			try_consume_err(TokenType::close_paren);
 			NodeTermParen* term_paren = m_allocator.emplace<NodeTermParen>();
 			term_paren->expr = expr.value();
@@ -291,7 +301,6 @@ public:
 	}
 	std::optional<NodeExpr*> parse_expr(const int min_prec = 0)
 	{
-		
 		std::optional<NodeTerm*> term_lhs = parse_term();
 		if (!term_lhs.has_value()) {
 			return {};
@@ -306,7 +315,7 @@ public:
 				std::optional<int> prec;
 				if (curr_tok.has_value()) {
 					prec = bin_prec(curr_tok->type);
-					if (!prec.has_value() || prec < min_prec) {						
+					if (!prec.has_value() || prec < min_prec) {
 						break;
 					}
 				}
@@ -327,8 +336,8 @@ public:
 					auto add = m_allocator.emplace<NodeBinExprAdd>(expr_lhs2, expr_rhs.value());
 					expr->var = add;
 					m_visit_count++;
-					if(count_paren)
-					m_paren_count[m_paren_count.size() - 1]++;
+					if (count_paren)
+						m_paren_count[m_paren_count.size() - 1]++;
 				}
 				else if (type == TokenType::star) {
 					expr_lhs2->var = expr_lhs->var;
@@ -382,7 +391,7 @@ public:
 						{
 							m_visit_counts.push_back(m_visit_count);
 						}
-							m_visit_count = 0;
+						m_visit_count = 0;
 
 						consume();
 						log_expr_greater->rhs = parse_expr().value();
@@ -390,7 +399,7 @@ public:
 						{
 							m_visit_counts.push_back(m_visit_count);
 						}
-							m_visit_count = 0;
+						m_visit_count = 0;
 						if (peek().has_value() && peek().value().type == TokenType::AND)
 						{
 							consume();
@@ -400,7 +409,7 @@ public:
 							{
 								m_visit_counts.push_back(m_visit_count);
 							}
-								m_visit_count = 0;
+							m_visit_count = 0;
 							log_expr_greater->varAnd = log_and;
 						}
 						else if (peek().has_value() && peek().value().type == TokenType::OR)
@@ -643,14 +652,74 @@ public:
 						log_expr->var = log_expr_lesser_equal;
 						expr_lhs->var = log_expr;
 					}
+
+				}
+				else if(curr_tok->type == TokenType::AND && m_tokens[m_index - 1].type == TokenType::close_paren)
+				{
+					NodeLogExpr* log_expr = m_allocator.emplace<NodeLogExpr>();
+					NodeLogExprParen* log_paren = m_allocator.emplace<NodeLogExprParen>();
+					log_paren->lhs = m_allocator.emplace<NodeExpr>();
+					log_paren->lhs->var = expr_lhs->var;
+					if (m_visit_count != 0)
+					{
+						m_visit_counts.push_back(m_visit_count);
+					}
+					m_visit_count = 0;
+					consume();
+					NodeLogAnd* log_and = m_allocator.emplace<NodeLogAnd>();
+					log_and->lhs = parse_expr().value();
+					if (m_visit_count != 0)
+					{
+						m_visit_counts.push_back(m_visit_count);
+					}
+					m_visit_count = 0;
+					log_paren->varAnd = log_and;
+
+					log_expr->var = log_paren;
+					expr_lhs->var = log_expr;
+				}
+				else if (curr_tok->type == TokenType::OR && m_tokens[m_index - 1].type == TokenType::close_paren)
+				{
+					NodeLogExpr* log_expr = m_allocator.emplace<NodeLogExpr>();
+					NodeLogExprParen* log_paren = m_allocator.emplace<NodeLogExprParen>();
+					log_paren->lhs = m_allocator.emplace<NodeExpr>();
+					log_paren->lhs->var = expr_lhs->var;
+					if (m_visit_count != 0)
+					{
+						m_visit_counts.push_back(m_visit_count);
+					}
+					m_visit_count = 0;
+						consume();
+						NodeLogOr* log_or = m_allocator.emplace<NodeLogOr>();
+						log_or->lhs = parse_expr().value();
+						if (m_visit_count != 0)
+						{
+							m_visit_counts.push_back(m_visit_count);
+						}
+						m_visit_count = 0;
+						log_paren->varOr = log_or;
+
+					log_expr->var = log_paren;
+					expr_lhs->var = log_expr;
+
+					if (auto i4t = std::get_if<NodeLogExpr*>(&expr_lhs->var))
+					{
+						if (auto i3t = std::get_if<NodeLogExprParen*>(&((*i4t)->var)))
+						{
+							if (auto i1t = std::get_if<NodeLogExpr*>(&((*i3t)->lhs->var)))
+							{
+								if (auto sda = std::get_if<NodeLogExprParen*>(&((*i1t)->var)))
+								{
+									std::cout << "sdasdasda";
+								}
+							}
+						}
+					}
 				}
 				else
-				{
 					break;
-				}
 			}
-			else
-				break;
+
 		}
 
 		return expr_lhs;

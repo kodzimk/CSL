@@ -218,12 +218,6 @@ public:
 				consume();
 				continue;
 			}
-			else if (peek().value()[0] == '!')
-			{
-				tokens.push_back({ .type = TokenType::opposet });
-				consume();			
-				continue;
-			}
 			else if (peek().value()[0] == '>')
 			{
 				if (peek(1).has_value() && peek(1).value()[0] == '=')
@@ -369,10 +363,11 @@ public:
 					consume();
 					continue;
 				}
-				else
+				else 
 				{
-					std::cerr << "Dont exist!!!" << std::endl;
-					exit(EXIT_FAILURE);
+					tokens.push_back({ .type = TokenType::opposet });
+					consume();
+					continue;
 				}
 			}
 			else if (isdigit(peek().value()[0]))
