@@ -7,39 +7,23 @@ section .data
 newLineMsg db 0xA, 0xD
 newLineLen equ $ - newLineMsg
 temp db 'a',0xA,0xD
-symbol db 's',0xA,0xD
-s db ' ',0xA,0xD
 
 section .text
 global _start
 _start:
    mov rax,3
    push rax
-   mov rax,2
+    mov rax,0
+    mov rdi,0
+    mov rsi,inputNumbers
+    mov rdx,1
+    syscall
+    mov rax,[inputNumbers]
+    sub rax,48
    push rax
-   mov rax,2
-   push rax
-    pop rbx
-    pop rax
-    add rax, rbx
-   push rax
-   mov rax,5
-   push rax
-   mov rax,1
-   push rax
-   push QWORD [rsp + 16]
+   push QWORD [rsp + 0]
 
-    pop rax
-    call _printnumberRAX
-   mov rax,2
-   push rax
-   mov rax,1
-   push rax
-   mov rax,1
-   push rax
-    pop rbx
-    pop rax
-    mul rbx
+   mov rax,5
    push rax
     pop rbx
     pop rax
@@ -52,132 +36,13 @@ carry_set0:
     
 mov rax,rsi
    push rax
-   push QWORD [rsp + 24]
-
-   mov rax,3
-   push rax
-    pop rbx
-    pop rax
-    mov rsi, 1
-    cmp rax, rbx
-    jc carry_set1
-    
-    mov rsi, 0
-carry_set1:
-    
-mov rax,rsi
-   push rax
-   mov rax,1
-   push rax
-   mov rax,1
-   push rax
-    pop rbx
-    pop rax
-    mov rsi, 1
-    cmp rax, rbx
-    jne carry_set2
-    
-    mov rsi, 0
-carry_set2:
-    
-mov rax,rsi
-   push rax
-    pop rax
-    pop rbx
-    mov rsi, 1
-    and rbx, rax
-    jne carry_set3
-    
-    mov rsi, 0
-carry_set3:
-    
-mov rax,rsi
-   push rax
-    pop rbx
-    pop rax
-    mov rsi, 1
-    cmp rax, rbx
-    jc carry_set4
-    
-    mov rsi, 0
-carry_set4:
-    
-mov rax,rsi
-   push rax
-   mov rax,1
-   push rax
-   mov rax,1
-   push rax
-    pop rbx
-    pop rax
-    mov rsi, 1
-    cmp rbx, rax
-    jc carry_set5
-    
-    mov rsi, 0
-carry_set5:
-    
-mov rax,rsi
-   push rax
-    pop rax
-    pop rbx
-    mov rsi, 1
-    or rax, rbx
-    jne carry_set6
-    
-    mov rsi, 0
-    carry_set6:
-    
-mov rax,rsi
-   push rax
     pop rax
     cmp rax,0
     je label0
  
-    jmp label1
 label0:
-   mov rax,2
-   push rax
-   mov rax,4
-   push rax
-    pop rbx
-    pop rax
-    mul rbx
-   push rax
-   push QWORD [rsp + 24]
-
-   mov rax,10
-   push rax
-    pop rbx
-    pop rax
-    add rax, rbx
-   push rax
-    pop rbx
-    pop rax
-    mov rsi, 1
-    cmp rax, rbx
-    jge carry_set7
-    
-    mov rsi, 0
-carry_set7:
-    
-mov rax,rsi
-   push rax
-    pop rax
-    cmp rax,0
-    je label2
- 
-    jmp label3
-label2:
-   push QWORD [rsp + 8]
-
-    pop rax
-    call _printnumberRAX
-label3:
   
-label1:
-  
-   push QWORD [rsp + 16]
+   push QWORD [rsp + 0]
 
     pop rdi
     jmp exit

@@ -1,5 +1,4 @@
 #pragma once
-
 #include<vector>
 #include<variant>
 #include<string>
@@ -9,8 +8,8 @@
 #include<sstream>
 #include<unordered_map>
 #include<cassert>
+#include <conio.h>
 #include<stack>
-
 #include"parser.h"
 
 using namespace std;
@@ -541,6 +540,11 @@ public:
 				gen.m_output << "   mov rax," << int_val->value.value() << '\n';
 				gen.push("rax");
 			}
+			void operator()(const NodeWordCharVal* char_val)
+			{
+				gen.m_output << "   mov rax,'" << char_val->value.value()<<"'" << '\n';
+				gen.push("rax");
+			}
 			void operator()(const NodeTermOpposet* term_op)
 			{
 				if (auto int_val = std::get_if<NodeTermIntVal*>(&term_op->var))
@@ -611,21 +615,12 @@ public:
 					offset << "QWORD [rsp + " << (gen.m_stack_size - var - 1) * 8 << "]\n";
 					gen.push(offset.str());
 				}
-				else if (find(gen.m_char_vars.begin(), gen.m_char_vars.end(), term_var->eqName) == gen.m_char_vars.end() && find(gen.m_char_vars.begin(), gen.m_char_vars.end(), term_var->name) != gen.m_char_vars.end())
+				else if (gen.m_char_vars.contains(term_var->name))
 				{
-					std::vector<std::string> s = { "'","s","'" };
-					gen.m_data << term_var->eqName << " db " << s[0] << s[1] << s[2] << "\n";
-					gen.m_char_vars.push_back(term_var->eqName);
-
-					gen.m_output << "    mov rax," << "[" << term_var->name << "]" << '\n';
-					gen.m_output << "    mov [" << term_var->eqName << "]," << "rax" << "\n";
-					gen.m_output << "    mov [" << term_var->name << "]," << "rax" << "\n";
-				}
-				else if (find(gen.m_char_vars.begin(), gen.m_char_vars.end(), term_var->eqName) != gen.m_char_vars.end() && find(gen.m_char_vars.begin(), gen.m_char_vars.end(), term_var->name) != gen.m_char_vars.end())
-				{
-					gen.m_output << "    mov rax," << "[" << term_var->name << "]" << '\n';
-					gen.m_output << "    mov [" << term_var->eqName << "]," << "rax" << "\n";
-					gen.m_output << "    mov [" << term_var->name << "]," << "rax" << "\n";
+					const auto& var = gen.m_char_vars.at(term_var->name);
+					std::stringstream offset;
+					offset << "QWORD [rsp + " << (gen.m_stack_size - var - 1) * 8 << "]\n";
+					gen.push(offset.str());
 				}
 				else
 				{
@@ -647,20 +642,6 @@ public:
 				gen.m_paren_count.erase(gen.m_paren_count.begin() + gen.current_paren);
 				gen.current_paren--;
 				gen.count_paren = false;
-			}
-			void operator()(const NodeWordCharVal* char_val)
-			{
-				if (find(gen.m_char_vars.begin(), gen.m_char_vars.end(), char_val->name) == gen.m_char_vars.end())
-				{
-					std::vector<std::string> s = { "'",char_val->value.value(),"'" };
-					gen.m_data << char_val->name << " db " << s[0] << s[1] << s[2] << "," << "0xA" << "," << "0xD" << "\n";
-					gen.m_char_vars.push_back(char_val->name);
-				}
-				else
-				{
-					std::vector<std::string> s = { "'",char_val->value.value(),"'" };
-					gen.m_output << "    mov [" << char_val->name << "], " << "dword " << s[0] << s[1] << s[2] << "\n";
-				}
 			}
 			void operator()(NodeLogExpr* log_expr)
 			{
@@ -930,21 +911,12 @@ public:
 			}
 			void operator()(const NodeStatPrint* stat_print)
 			{
-				if (stat_print->variableName.has_value() && gen.m_types.contains(stat_print->variableName.value()) && gen.m_types.at(stat_print->variableName.value()) == "character")
+                if (stat_print->type == "character" || gen.m_char_vars.contains(stat_print->variableName.value()))
 				{
-					gen.m_output << "    mov rax,1" << "\n";
-					gen.m_output << "    mov rsi," << stat_print->variableName.value() << "\n";
-					gen.m_output << "    mov rdi,1" << "\n";
-					gen.m_output << "    mov rdx,1" << "\n";
-					gen.m_output << "    syscall\n";
-					gen.m_output << "    \n";
-				}
-				else if (stat_print->type == "character")
-				{
-					NodeTerm* term = std::get<NodeTerm*>(stat_print->expr->var);
-					NodeWordCharVal* val = std::get<NodeWordCharVal*>(term->var);
+					gen.gen_expr(stat_print->expr);
+					gen.pop("rax");
 
-					gen.m_output << "    mov [temp]," << "dword '" << val->value.value() << "'" << "\n";
+					gen.m_output << "    mov [temp]," << "rax" << "\n";
 					gen.m_output << "    mov rax,1" << "\n";
 					gen.m_output << "    mov rsi,temp" << "\n";
 					gen.m_output << "    mov rdi,1" << "\n";
@@ -952,12 +924,17 @@ public:
 					gen.m_output << "    syscall\n";
 					gen.m_output << "    \n";
 				}
-				else if (stat_print->type == "integer" || (stat_print->variableName.has_value() && gen.m_types.contains(stat_print->variableName.value()) && gen.m_types.at(stat_print->variableName.value()) == "integer"))
+				else if (stat_print->type == "integer" || gen.m_int_vars.contains(stat_print->variableName.value()))
 				{
 					gen.gen_expr(stat_print->expr);
 					gen.is_bin_expr = false;
 					gen.pop("rax");
 					gen.m_output << "    call _printnumberRAX\n";
+				}
+				else
+				{
+					std::cerr << "Invalid expr!!" << std::endl;
+					exit(EXIT_FAILURE);
 				}
 
 				if (stat_print->newLine)
@@ -972,7 +949,7 @@ public:
 			}
 			void operator()(const NodeStatVar* stat_var)
 			{
-				if (!gen.m_int_vars.contains(stat_var->name) && find(gen.m_char_vars.begin(), gen.m_char_vars.end(), stat_var->name) == gen.m_char_vars.end())
+				if (!gen.m_int_vars.contains(stat_var->name) && !gen.m_char_vars.contains(stat_var->name))
 				{
 					gen.m_cur_var = stat_var->name;
 					gen.gen_expr(stat_var->expr);
@@ -984,6 +961,7 @@ public:
 					}
 					else if (stat_var->type != "character")
 						gen.m_int_values[stat_var->name] = gen.value.value();
+					
 
 					if (stat_var->type != "character")
 					{
@@ -993,6 +971,15 @@ public:
 							gen.m_int_name.push_back(stat_var->name);
 						}
 					}
+					else if (stat_var->type == "character")
+					{
+						gen.m_char_vars[stat_var->name] = gen.m_stack_size - 1;
+						if (gen.temp_vars)
+						{
+							gen.m_char_name.push_back(stat_var->name);
+						}
+					}
+
 					gen.m_bin_expr.clear();
 				}
 				else
@@ -1003,7 +990,7 @@ public:
 			}
 			void operator()(const NodeStateEq* stat_eq)
 			{
-				if (gen.m_int_vars.contains(stat_eq->variableName) || find(gen.m_char_vars.begin(), gen.m_char_vars.end(), stat_eq->variableName) != gen.m_char_vars.end())
+				if (gen.m_int_vars.contains(stat_eq->variableName) || gen.m_char_vars.contains(stat_eq->variableName))
 				{
 					gen.m_cur_var = stat_eq->variableName;
 					gen.gen_expr(stat_eq->expr);
@@ -1011,13 +998,17 @@ public:
 
 					if (!gen.m_bin_expr.empty())
 						gen.parse_bin_expr();
-					else
+					else if(gen.m_int_values.contains(stat_eq->variableName))
 						gen.m_int_values.at(stat_eq->variableName) = gen.value.value();
 
 					if (gen.m_int_vars.contains(stat_eq->variableName))
 					{
 						gen.m_int_vars.at(stat_eq->variableName) = gen.m_stack_size - 1;
 						gen.value = NULL;
+					}
+					else if (gen.m_char_vars.contains(stat_eq->variableName))
+					{
+						gen.m_char_vars.at(stat_eq->variableName) = gen.m_stack_size - 1;
 					}
 				}
 				else
@@ -1127,22 +1118,25 @@ public:
 					gen.m_output << "    mov rsi,inputNumbers\n";
 					gen.m_output << "    mov rdx,1\n";
 					gen.m_output << "    syscall\n";
-
+					std::cout << "Press value that you going to press during compelation:" << std::endl;
+					gen.m_int_values.at(stat_input->name) = _getch() - 48;
+						
 					gen.m_output << "    mov rax,[inputNumbers]\n";
 					gen.m_output << "    sub rax,48\n";
 					gen.push("rax");
 					gen.m_int_vars.at(stat_input->name) = gen.m_stack_size - 1;
 				}
-				else if (find(gen.m_char_vars.begin(), gen.m_char_vars.end(), stat_input->name) != gen.m_char_vars.end())
+				else if (gen.m_char_vars.contains(stat_input->name))
 				{
 					gen.m_output << "    mov rax,0\n";
 					gen.m_output << "    mov rdi,0\n";
 					gen.m_output << "    mov rsi,inputNumbers\n";
-					gen.m_output << "    mov rdx,1\n";
+					gen.m_output << "    mov rdx,255\n";
 					gen.m_output << "    syscall\n";
 
 					gen.m_output << "    mov rax,[inputNumbers]\n";
-					gen.m_output << "    mov [" << stat_input->name << "],rax\n";
+					gen.push("rax");
+					gen.m_char_vars.at(stat_input->name) = gen.m_stack_size - 1;
 				}
 				else
 				{
@@ -1329,12 +1323,17 @@ private:
 	}
 	void end_scope()
 	{
-		for (int i = m_last_index_of_scope[m_last_index_of_scope.size() - 1]; i < m_stack_size; i++)
+		for (int i = m_last_index_of_scope[m_last_index_of_scope.size() - 1]; i < m_stack_size + 1; i++)
 		{
 			if (m_int_name.size() > 0)
 			{
 				m_int_vars.erase(m_int_name[m_int_name.size() - 1]);
 				m_int_name.erase(m_int_name.end() - 1);
+			}
+			else if (m_char_name.size() > 0)
+			{
+				m_char_vars.erase(m_char_name[m_char_name.size() - 1]);
+				m_char_name.erase(m_char_name.end() - 1);
 			}
 			pop("rax");
 		}
@@ -1792,11 +1791,12 @@ private:
 	std::vector<int> m_paren_count;
 	std::vector<int> m_visit_counts;
 	std::vector<std::string> m_int_name;
-	std::vector<std::string> m_char_vars;
+	std::vector<std::string> m_char_name;
 	std::vector<size_t> m_last_index_of_scope;
 	std::vector<std::variant<int, std::string, TokenType>> if_expr;
 
 	std::unordered_map<std::string, int> m_int_values;
+	std::unordered_map<std::string, size_t> m_char_vars;
 	std::unordered_map<std::string, size_t> m_int_vars;
 	std::unordered_map<std::string, std::string> m_types;
 

@@ -881,12 +881,6 @@ public:
 				std::cerr << "Invalid value!!" << std::endl;
 				exit(EXIT_FAILURE);
 			}
-			else if (type == "character")
-			{
-				NodeTerm* word = std::get<NodeTerm*>(stat_var->expr->var);
-				NodeWordCharVal* val = std::get<NodeWordCharVal*>(word->var);
-				val->name = stat_var->name;
-			}
 			else if (type == "variable")
 			{
 				NodeTerm* word = std::get<NodeTerm*>(stat_var->expr->var);

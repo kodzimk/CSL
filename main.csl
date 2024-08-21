@@ -1,26 +1,15 @@
 int main()
 {
-  char symbol = 's';
-  char s = ' ';
+
   int a = 3;
-  a = 2 + 2;
-  int b = 5;
-  bool c = true;
-  printf(a);
+    cin(a);
+    if(a > 5)
+    {
+      printf(a);
+      
+    }
+
+    
   
-  if((2 > 1 * 1) < (a < 3 & 1 != 1)  | 1 > 1)
-  {
-    printf(a);
-  }
-  else if(2 * 4 >= a + 10)
-  {
-    printf(symbol$n);
-  }
-  else
-  {
-      printf(b);
-  }
-
-
   return a;
 }
