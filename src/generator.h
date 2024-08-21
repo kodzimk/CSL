@@ -17,11 +17,12 @@ using namespace std;
 class Generator
 {
 public:
-	Generator(NodeProg prog, std::unordered_map<std::string, std::string> m_types, std::vector<int> m_visit_counts, std::vector<int> m_paren_count)
+	Generator(NodeProg prog, std::unordered_map<std::string, std::string> m_types, std::vector<int> m_visit_counts, std::vector<int> m_paren_count,int cin_count)
 		: prog(prog),
 		m_types(m_types),
 		m_visit_counts(m_visit_counts),
-		m_paren_count(m_paren_count)
+		m_paren_count(m_paren_count),
+		cin_count(cin_count)
 	{
 
 	}
@@ -1113,28 +1114,19 @@ public:
 			{
 				if (gen.m_int_vars.contains(stat_input->name))
 				{
-					gen.m_output << "    mov rax,0\n";
-					gen.m_output << "    mov rdi,0\n";
-					gen.m_output << "    mov rsi,inputNumbers\n";
-					gen.m_output << "    mov rdx,1\n";
-					gen.m_output << "    syscall\n";
-					std::cout << "Press value that you going to press during compelation:" << std::endl;
+					std::cout << "Press value that you going to press during compelation value name = [" << stat_input->name << "]" << std::endl;
 					gen.m_int_values.at(stat_input->name) = _getch() - 48;
 						
-					gen.m_output << "    mov rax,[inputNumbers]\n";
-					gen.m_output << "    sub rax,48\n";
+					gen.m_output << "    mov rax," << gen.m_int_values.at(stat_input->name)<<"\n";
 					gen.push("rax");
 					gen.m_int_vars.at(stat_input->name) = gen.m_stack_size - 1;
 				}
 				else if (gen.m_char_vars.contains(stat_input->name))
 				{
-					gen.m_output << "    mov rax,0\n";
-					gen.m_output << "    mov rdi,0\n";
-					gen.m_output << "    mov rsi,inputNumbers\n";
-					gen.m_output << "    mov rdx,255\n";
-					gen.m_output << "    syscall\n";
-
-					gen.m_output << "    mov rax,[inputNumbers]\n";
+					std::cout << "Press value that you going to press during compelation value name = [" << stat_input->name << "]" << std::endl;
+					char value = _getch();
+					gen.m_char_vars.at(stat_input->name) = gen.m_stack_size;
+					gen.m_output << "    mov rax,'"<<value << "'" << "\n";
 					gen.push("rax");
 					gen.m_char_vars.at(stat_input->name) = gen.m_stack_size - 1;
 				}
@@ -1151,8 +1143,10 @@ public:
 
 	std::string gen_prog()
 	{
-		m_bss << "section .bss\n stringBuffer resb 100\nstringBufferPos resb 8\ninputNumbers resb 8\n";
+		m_bss << "section .bss\n stringBuffer resb 100\nstringBufferPos resb 8\n";
 		m_data << "section .data\n";
+		m_data << "text       times 255 db 0\n";
+		m_data << "textSize   equ $ - text\n";
 		m_data << "newLineMsg db 0xA, 0xD\n";
 		m_data << "newLineLen equ $ - newLineMsg\n";
 		m_data << "temp db 'a',0xA,0xD\n";
@@ -1807,6 +1801,7 @@ private:
 	size_t m_stack_size = 0;
 
 	int orCount = 0;
+	int cin_count = 0;
 	int current_paren = -1;
 	int carry_count = 0;
 

@@ -2,14 +2,18 @@ int main()
 {
 
   int a = 3;
-    cin(a);
-    if(a > 5)
-    {
-      printf(a);
-      
-    }
+  
+  if(a > 0)
+  {
+   printf(a);
+  }
+    
+    
+    char symbol = ' ';
+    cin(symbol);
+    printf(symbol$n);
 
     
   
-  return a;
+  return 1;
 }

@@ -997,6 +997,7 @@ public:
 		{
 			consume();
 			consume();
+			cin_count++;
 			NodeStatInput* stat_input = m_allocator.emplace<NodeStatInput>();
 			stat_input->expr = parse_expr().value();
 			NodeTerm* term = std::get<NodeTerm*>(stat_input->expr->var);
@@ -1078,6 +1079,7 @@ private:
 	ArenaAllocator m_allocator;
 	std::vector<Token> m_tokens;
 public:
+	int cin_count = 0;
 	int m_visit_count = 0;
 	std::vector<int> m_visit_counts;
 	std::vector<int> m_paren_count;

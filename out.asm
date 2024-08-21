@@ -1,9 +1,10 @@
 section .bss
  stringBuffer resb 100
 stringBufferPos resb 8
-inputNumbers resb 8
 
 section .data
+text       times 255 db 0
+textSize   equ $ - text
 newLineMsg db 0xA, 0xD
 newLineLen equ $ - newLineMsg
 temp db 'a',0xA,0xD
@@ -13,17 +14,9 @@ global _start
 _start:
    mov rax,3
    push rax
-    mov rax,0
-    mov rdi,0
-    mov rsi,inputNumbers
-    mov rdx,1
-    syscall
-    mov rax,[inputNumbers]
-    sub rax,48
-   push rax
    push QWORD [rsp + 0]
 
-   mov rax,5
+   mov rax,0
    push rax
     pop rbx
     pop rax
@@ -40,10 +33,35 @@ mov rax,rsi
     cmp rax,0
     je label0
  
-label0:
-  
    push QWORD [rsp + 0]
 
+    pop rax
+    call _printnumberRAX
+    pop rax
+label0:
+  
+   mov rax,' '
+   push rax
+    mov rax,'l'
+   push rax
+   push QWORD [rsp + 0]
+
+    pop rax
+    mov [temp],rax
+    mov rax,1
+    mov rsi,temp
+    mov rdi,1
+    mov rdx,1
+    syscall
+    
+    mov edx,newLineLen
+    mov ecx,newLineMsg
+    mov ebx,1
+    mov eax,4
+    int 0x80
+    
+   mov rax,1
+   push rax
     pop rdi
     jmp exit
 exit:
