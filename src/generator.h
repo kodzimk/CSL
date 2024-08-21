@@ -1116,6 +1116,7 @@ public:
 				{
 					std::cout << "Press value that you going to press during compelation value name = [" << stat_input->name << "]" << std::endl;
 					gen.m_int_values.at(stat_input->name) = _getch() - 48;
+					std::cout << "Value:" << gen.m_int_values.at(stat_input->name) << std::endl;
 						
 					gen.m_output << "    mov rax," << gen.m_int_values.at(stat_input->name)<<"\n";
 					gen.push("rax");
@@ -1125,6 +1126,7 @@ public:
 				{
 					std::cout << "Press value that you going to press during compelation value name = [" << stat_input->name << "]" << std::endl;
 					char value = _getch();
+					std::cout << "Value:" << value << std::endl;
 					gen.m_char_vars.at(stat_input->name) = gen.m_stack_size;
 					gen.m_output << "    mov rax,'"<<value << "'" << "\n";
 					gen.push("rax");

@@ -35,6 +35,14 @@ mov rax,rsi
  
    push QWORD [rsp + 0]
 
+   mov rax,2
+   push rax
+    pop rbx
+    pop rax
+    add rax, rbx
+   push rax
+   push QWORD [rsp + 0]
+
     pop rax
     call _printnumberRAX
     pop rax
