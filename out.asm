@@ -14,6 +14,10 @@ global _start
 _start:
    mov rax,1
    push rax
+   push QWORD [rsp + 0]
+
+    pop rax
+    call _printnumberRAX
    mov rax,0
    push rax
    mov rax,0
@@ -24,19 +28,13 @@ _start:
    push rax
    mov rax,0
    push rax
-   mov rax,19
+   mov rax,0
    push rax
    push QWORD [rsp + 0]
 
     pop rax
     call _printnumberRAX
-   mov rax,9
-   push rax
-   push QWORD [rsp + 0]
-
-    pop rax
-    call _printnumberRAX
-   push QWORD [rsp + 56]
+   push QWORD [rsp + 48]
 
    mov rax,0
    push rax
@@ -55,7 +53,23 @@ mov rax,rsi
     cmp rax,0
     je label0
  
-   push QWORD [rsp + 56]
+   mov rax,0
+   push rax
+   mov rax,0
+   push rax
+   mov rax,0
+   push rax
+   mov rax,0
+   push rax
+   mov rax,0
+   push rax
+    mov rax,12
+   push rax
+   push QWORD [rsp + 0]
+
+    pop rax
+    call _printnumberRAX
+   push QWORD [rsp + 96]
 
    mov rax,2
    push rax
@@ -68,8 +82,24 @@ mov rax,rsi
     pop rax
     call _printnumberRAX
     pop rax
+    pop rax
+    pop rax
+    pop rax
+    pop rax
+    pop rax
+    pop rax
 label0:
   
+   mov rax,0
+   push rax
+   mov rax,0
+   push rax
+   mov rax,0
+   push rax
+   mov rax,0
+   push rax
+   mov rax,0
+   push rax
    mov rax,' '
    push rax
     mov rax,'f'

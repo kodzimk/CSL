@@ -2,23 +2,24 @@ int main()
 {
 
   int a = 1;
-  int b[5];
-  b = 19;
+   printf(a);
+  bool b[5];
+  b = false;
     printf(b);
-   b++;
-   b = 9;
 
-   printf(b);
 
 
   if(a > 0)
   {
+  int c[5];
+  c[0] = 12;
+   printf(c);
    a = a + 2;
    printf(a);
 
   }
     
-    
+     int c[5];
     char symbol = ' ';
     cin(symbol);
     printf(symbol$n);

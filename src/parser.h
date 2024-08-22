@@ -358,6 +358,11 @@ public:
 					array->equalType = TokenType::character;
 					array->value = val.value().value.value();
 				}
+				else if (auto val = try_consume(TokenType::boolean))
+				{
+					array->equalType = TokenType::boolean;
+					array->value = val.value().value.value();
+				}
 			}
 			word->var = array;
 

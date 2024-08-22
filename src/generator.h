@@ -541,7 +541,7 @@ public:
 				gen.m_output << "   mov rax," << int_val->value.value() << '\n';
 				gen.push("rax");
 
-				if (gen.m_cur_var.has_value() && gen.m_arr_vars.contains(gen.m_cur_var.value()) && gen.m_arr_vars.at(gen.m_cur_var.value()).type == "integer")
+				if (gen.m_cur_var.has_value() && gen.m_arr_vars.contains(gen.m_cur_var.value()) && (gen.m_arr_vars.at(gen.m_cur_var.value()).type == "integer" || gen.m_arr_vars.at(gen.m_cur_var.value()).type == "boolean"))
 				{
 					gen.m_arr_vars.at(gen.m_cur_var.value()).arr[gen.m_arr_vars.at(gen.m_cur_var.value()).current_size] = gen.m_stack_size - 1;
 				}
@@ -624,7 +624,7 @@ public:
 					std::stringstream offset;
 					offset << "QWORD [rsp + " << (gen.m_stack_size - var - 1) * 8 << "]\n";
 					gen.push(offset.str());
-					if (gen.m_cur_var.has_value() && gen.m_arr_vars.contains(gen.m_cur_var.value()) && gen.m_arr_vars.at(gen.m_cur_var.value()).type == "integer")
+					if (gen.m_cur_var.has_value() && gen.m_arr_vars.contains(gen.m_cur_var.value()) && (gen.m_arr_vars.at(gen.m_cur_var.value()).type == "integer" || gen.m_arr_vars.at(gen.m_cur_var.value()).type == "boolean"))
 					{
 						gen.m_arr_vars.at(gen.m_cur_var.value()).arr[gen.m_arr_vars.at(gen.m_cur_var.value()).current_size] = gen.m_stack_size-1;
 					}
@@ -710,6 +710,10 @@ public:
 					gen.m_arr_vars[array->name].size = stoi(array->size);
 					gen.m_arr_vars[array->name].arr = arr;
 					gen.m_arr_vars[array->name].type = array->type;
+					if (gen.temp_vars)
+					{
+						gen.m_arr_name.push_back(array->name);
+					}
 				}
 				else if(!array->value.empty())
 				{
@@ -717,6 +721,11 @@ public:
 					{					
 						gen.m_arr_vars.at(array->name).arr[size] = gen.m_stack_size;
 						if (array->equalType == TokenType::int_val)
+						{
+							gen.m_output << "    mov rax," << array->value << "\n";
+							gen.push("rax");
+						}
+						else if (array->equalType == TokenType::boolean)
 						{
 							gen.m_output << "    mov rax," << array->value << "\n";
 							gen.push("rax");
@@ -1043,12 +1052,35 @@ public:
 					gen.m_output << "    syscall\n";
 					gen.m_output << "    \n";
 				}
-				else if (stat_print->type == "integer" || gen.m_int_vars.contains(stat_print->variableName.value()))
+				else if (stat_print->type == "integer"  || gen.m_int_vars.contains(stat_print->variableName.value()))
 				{
 					gen.gen_expr(stat_print->expr);
 					gen.is_bin_expr = false;
 					gen.pop("rax");
 					gen.m_output << "    call _printnumberRAX\n";
+				}
+				else if (stat_print->type == "boolean" && gen.m_int_vars.contains(stat_print->variableName.value()))
+				{
+					if (gen.m_int_values.at(stat_print->variableName.value()) == 0)
+					{
+						gen.m_output << "    mov [temp],dword 'false'\n";
+						gen.m_output << "    mov rax,1" << "\n";
+						gen.m_output << "    mov rsi,temp" << "\n";
+						gen.m_output << "    mov rdi,1" << "\n";
+						gen.m_output << "    mov rdx,1" << "\n";
+						gen.m_output << "    syscall\n";
+						gen.m_output << "    \n";
+					}
+					else
+					{
+						gen.m_output << "    mov [temp],dword 'true'\n";
+						gen.m_output << "    mov rax,1" << "\n";
+						gen.m_output << "    mov rsi,temp" << "\n";
+						gen.m_output << "    mov rdi,1" << "\n";
+						gen.m_output << "    mov rdx,1" << "\n";
+						gen.m_output << "    syscall\n";
+						gen.m_output << "    \n";
+					}
 				}
 				else if (stat_print->type == "variable")
 				{
@@ -1071,6 +1103,13 @@ public:
 						gen.m_output << "    mov rdx,1" << "\n";
 						gen.m_output << "    syscall\n";
 						gen.m_output << "    \n";
+					}
+					else if (gen.m_types.at(stat_print->variableName.value()) == "boolean")
+					{
+						gen.gen_expr(stat_print->expr);
+						gen.is_bin_expr = false;
+						gen.pop("rax");
+						gen.m_output << "    call _printnumberRAX\n";
 					}
 				}
 				else
@@ -1488,6 +1527,15 @@ private:
 			{
 				m_char_vars.erase(m_char_name[m_char_name.size() - 1]);
 				m_char_name.erase(m_char_name.end() - 1);
+			}
+			else if (m_arr_name.size() > 0)
+			{
+				for (int i = m_arr_vars.at(m_arr_name[m_arr_name.size() - 1]).size - 1; i >= 0; i--)
+				{
+					pop("rax");
+				}
+				m_arr_vars.erase(m_arr_name[m_arr_name.size() - 1]);
+				m_arr_name.erase(m_arr_name.end() - 1);
 			}
 			pop("rax");
 		}
@@ -1939,6 +1987,7 @@ private:
 	{
 		int size = -1;
 		std::vector<size_t> arr;
+		std::vector<int> values;
 		std::string type;
 		int current_size = 0;
 	};
@@ -1952,6 +2001,7 @@ private:
 	std::vector<int> m_paren_count;
 	std::vector<int> m_visit_counts;
 	std::vector<std::string> m_int_name;
+	std::vector<std::string> m_arr_name;
 	std::vector<std::string> m_char_name;
 	std::vector<size_t> m_last_index_of_scope;
 	std::vector<std::variant<int, std::string, TokenType>> if_expr;
