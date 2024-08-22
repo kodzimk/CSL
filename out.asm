@@ -18,6 +18,26 @@ _start:
 
     pop rax
     call _printnumberRAX
+   mov rax,0
+   push rax
+   mov rax,0
+   push rax
+   mov rax,0
+   push rax
+   mov rax,0
+   push rax
+   mov rax,2
+   push rax
+   mov rax,1
+   push rax
+    pop rbx
+    pop rax
+    mul rbx
+   push rax
+   push QWORD [rsp + 0]
+
+    pop rax
+    call _printnumberRAX
    mov rax,2
    push rax
    mov rax,1
@@ -33,9 +53,9 @@ carry_set0:
     
 mov rax,rsi
    push rax
-   mov rax,1
-   push rax
    mov rax,2
+   push rax
+   mov rax,1
    push rax
     pop rbx
     pop rax
@@ -48,14 +68,92 @@ carry_set1:
     
 mov rax,rsi
    push rax
+   mov rax,2
+   push rax
+   mov rax,1
+   push rax
+    pop rbx
+    pop rax
+    mov rsi, 1
+    cmp rbx, rax
+    jc carry_set2
+    
+    mov rsi, 0
+carry_set2:
+    
+mov rax,rsi
+   push rax
+    pop rax
+    pop rbx
+    mov rsi, 1
+    and rbx, rax
+    jne carry_set3
+    
+    mov rsi, 0
+carry_set3:
+    
+mov rax,rsi
+   push rax
+   mov rax,1
+   push rax
+   mov rax,2
+   push rax
+    pop rbx
+    pop rax
+    mov rsi, 1
+    cmp rbx, rax
+    jc carry_set4
+    
+    mov rsi, 0
+carry_set4:
+    
+mov rax,rsi
+   push rax
+   mov rax,2
+   push rax
+   mov rax,1
+   push rax
+    pop rbx
+    pop rax
+    mov rsi, 1
+    cmp rbx, rax
+    jc carry_set5
+    
+    mov rsi, 0
+carry_set5:
+    
+mov rax,rsi
+   push rax
+    pop rax
+    pop rbx
+    mov rsi, 1
+    and rbx, rax
+    jne carry_set6
+    
+    mov rsi, 0
+carry_set6:
+    
+mov rax,rsi
+   push rax
     pop rax
     pop rbx
     mov rsi, 1
     or rax, rbx
-    jne carry_set2
+    jne carry_set7
     
     mov rsi, 0
-    carry_set2:
+    carry_set7:
+    
+mov rax,rsi
+   push rax
+    pop rax
+    pop rbx
+    mov rsi, 1
+    or rax, rbx
+    jne carry_set8
+    
+    mov rsi, 0
+    carry_set8:
     
 mov rax,rsi
    push rax
@@ -63,7 +161,15 @@ mov rax,rsi
     cmp rax,0
     je label0
  
-   push QWORD [rsp + 0]
+   mov rax,0
+   push rax
+   mov rax,0
+   push rax
+   mov rax,0
+   push rax
+   mov rax,0
+   push rax
+   push QWORD [rsp + 72]
 
    mov rax,2
    push rax
@@ -76,8 +182,24 @@ mov rax,rsi
     pop rax
     call _printnumberRAX
     pop rax
+    pop rax
+    pop rax
+    pop rax
+    pop rax
 label0:
   
+   mov rax,0
+   push rax
+   mov rax,0
+   push rax
+   mov rax,0
+   push rax
+   mov rax,0
+   push rax
+   push QWORD [rsp + 24]
+
+    pop rax
+    call _printnumberRAX
    mov rax,' '
    push rax
     mov rax,'s'

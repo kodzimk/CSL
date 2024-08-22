@@ -42,6 +42,7 @@ public:
 			}
 			void operator()(const NodeLogExprParen* log_paren)
 			{
+				gen.if_expr.push_back(TokenType::open_paren);
 				gen.temp_log_expr = nullptr;
 				gen.gen_expr(log_paren->lhs);
 				gen.m_bin_expr.clear();
@@ -50,6 +51,7 @@ public:
 					gen.gen_expr(gen.temp_log_expr.value());
 					gen.is_bin_expr = false;
 				}
+				gen.if_expr.push_back(TokenType::close_paren);
 				if (log_paren->varAnd.has_value())
 				{
 					if (gen.if_stat)
@@ -638,13 +640,13 @@ public:
 			}
 			void operator()(NodeTermParen* term_paren)
 			{
-				gen.if_expr.push_back(TokenType::open_paren);
+				
 				gen.current_paren++;
 				gen.count_paren = true;
 				gen.m_bin_expr += "(";
 				gen.gen_expr(term_paren->expr);
 				gen.m_bin_expr += ")";
-				gen.if_expr.push_back(TokenType::close_paren);
+
 				gen.m_paren_count.erase(gen.m_paren_count.begin() + gen.current_paren);
 				gen.current_paren--;
 				gen.count_paren = false;
@@ -1142,7 +1144,8 @@ public:
 					gen.gen_expr(stat_eq->expr);
 					gen.is_bin_expr = false;
 
-					if (!gen.m_bin_expr.empty())
+	
+					if (!gen.m_bin_expr.empty() && gen.m_int_values.contains(stat_eq->variableName))
 						gen.parse_bin_expr();
 					else if(gen.m_int_values.contains(stat_eq->variableName))
 						gen.m_int_values.at(stat_eq->variableName) = gen.value.value();
@@ -1155,6 +1158,12 @@ public:
 					else if (gen.m_char_vars.contains(stat_eq->variableName))
 					{
 						gen.m_char_vars.at(stat_eq->variableName) = gen.m_stack_size - 1;
+					}
+					else if (gen.m_arr_vars.contains(stat_eq->variableName) && !gen.m_bin_expr.empty())
+					{
+						gen.m_arr_vars.at(stat_eq->variableName).arr[gen.m_arr_vars.at(stat_eq->variableName).current_size] = gen.m_stack_size - 1;
+						gen.m_arr_vars.at(stat_eq->variableName).values[gen.m_arr_vars.at(stat_eq->variableName).current_size] = gen.evaluate(gen.m_bin_expr);
+						gen.m_bin_expr.clear();
 					}
 				}
 				else

@@ -763,20 +763,6 @@ public:
 
 					log_expr->var = log_paren;
 					expr_lhs->var = log_expr;
-
-					if (auto i4t = std::get_if<NodeLogExpr*>(&expr_lhs->var))
-					{
-						if (auto i3t = std::get_if<NodeLogExprParen*>(&((*i4t)->var)))
-						{
-							if (auto i1t = std::get_if<NodeLogExpr*>(&((*i3t)->lhs->var)))
-							{
-								if (auto sda = std::get_if<NodeLogExprParen*>(&((*i1t)->var)))
-								{
-									std::cout << "sdasdasda";
-								}
-							}
-						}
-					}
 				}
 				else
 					break;
