@@ -139,8 +139,8 @@ struct NodeTermOpposet
 struct NodeTermArray
 {
 	std::string type;
-	TokenType equalType;
-	std::string value;
+	std::string equalType;
+	NodeExpr* expr = nullptr;
 	std::string name;
     std::string size;
 };
@@ -269,6 +269,7 @@ public:
 			if (auto arr = try_consume(TokenType::open_braket))
 			{
 				NodeTermArray* array1 = m_allocator.emplace<NodeTermArray>();
+				array1->name = m_tokens[m_index - 2].value.value();
 				array1->size = consume().value.value();
 				term->var = array1;
 				try_consume(TokenType::close_braket);
@@ -343,26 +344,15 @@ public:
 			try_consume_err(TokenType::close_braket);
 			if (try_consume(TokenType::eq))
 			{
-				if (auto val = try_consume(TokenType::int_val))
-				{
-					array->equalType = TokenType::int_val;
-					array->value = val.value().value.value();
-				}
-				else if (auto val = try_consume(TokenType::variable))
-				{
-					array->equalType = TokenType::variable;
-					array->value = val.value().value.value();
-				}
-				else if (auto val = try_consume(TokenType::character))
-				{
-					array->equalType = TokenType::character;
-					array->value = val.value().value.value();
-				}
-				else if (auto val = try_consume(TokenType::boolean))
-				{
-					array->equalType = TokenType::boolean;
-					array->value = val.value().value.value();
-				}
+				if (peek().value().type == TokenType::int_val)
+					array->equalType = to_string(peek().value().type);
+				else if(peek().value().type == TokenType::character)
+					array->equalType = to_string(peek().value().type);
+				else if (peek().value().type == TokenType::boolean)
+					array->equalType = to_string(peek().value().type);
+				else if (peek().value().type == TokenType::variable)
+					array->equalType = m_vars.at(peek().value().value.value());
+				array->expr = parse_expr().value();
 			}
 			word->var = array;
 

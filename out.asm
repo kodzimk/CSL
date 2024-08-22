@@ -28,14 +28,24 @@ _start:
    push rax
    mov rax,0
    push rax
-   mov rax,0
+   push QWORD [rsp + 24]
+
+   mov rax,3
+   push rax
+    pop rbx
+    pop rax
+    add rax, rbx
+   push rax
+   mov rax,3
    push rax
    push QWORD [rsp + 0]
 
+   mov rax,2
+   push rax
+    pop rbx
     pop rax
-    call _printnumberRAX
-   push QWORD [rsp + 48]
-
+    sub rax, rbx
+   push rax
    mov rax,0
    push rax
     pop rbx
@@ -63,13 +73,13 @@ mov rax,rsi
    push rax
    mov rax,0
    push rax
-    mov rax,12
+   mov rax,12
    push rax
    push QWORD [rsp + 0]
 
     pop rax
     call _printnumberRAX
-   push QWORD [rsp + 96]
+   push QWORD [rsp + 104]
 
    mov rax,2
    push rax
@@ -102,7 +112,7 @@ label0:
    push rax
    mov rax,' '
    push rax
-    mov rax,'f'
+    mov rax,'s'
    push rax
    push QWORD [rsp + 0]
 

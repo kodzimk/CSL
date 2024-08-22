@@ -91,9 +91,6 @@ public:
 				{
 					if (gen.m_bin_expr.size() > 2)
 					{
-						if (gen.m_bin_expr[0] == '(')
-							gen.m_bin_expr.push_back(')');
-
 						gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
 						gen.m_bin_expr.clear();
 						gen.is_bin_expr = false;
@@ -103,8 +100,6 @@ public:
 				gen.gen_expr(log_greater->rhs);
 				if (gen.m_bin_expr.size() > 2)
 				{
-					if (gen.m_bin_expr[0] == '(')
-						gen.m_bin_expr.push_back(')');
 					gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
 					gen.m_bin_expr.clear();
 					gen.is_bin_expr = false;
@@ -169,8 +164,7 @@ public:
 				{
 					if (gen.m_bin_expr.size() > 2)
 					{
-						if (gen.m_bin_expr[0] == '(')
-							gen.m_bin_expr.push_back(')');
+
 						gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
 						gen.m_bin_expr.clear();
 						gen.is_bin_expr = false;
@@ -180,8 +174,6 @@ public:
 				gen.gen_expr(log_lesser->rhs);
 				if (gen.m_bin_expr.size() > 2)
 				{
-					if (gen.m_bin_expr[0] == '(')
-						gen.m_bin_expr.push_back(')');
 					gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
 					gen.m_bin_expr.clear();
 					gen.is_bin_expr = false;
@@ -241,8 +233,6 @@ public:
 				{
 					if (gen.m_bin_expr.size() > 2)
 					{
-						if (gen.m_bin_expr[0] == '(')
-							gen.m_bin_expr.push_back(')');
 						gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
 						gen.m_bin_expr.clear();
 						gen.is_bin_expr = false;
@@ -252,8 +242,6 @@ public:
 				gen.gen_expr(log_equal->rhs);
 				if (gen.m_bin_expr.size() > 2)
 				{
-					if (gen.m_bin_expr[0] == '(')
-						gen.m_bin_expr.push_back(')');
 					gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
 					gen.m_bin_expr.clear();
 					gen.is_bin_expr = false;
@@ -313,8 +301,6 @@ public:
 				{
 					if (gen.m_bin_expr.size() > 2)
 					{
-						if (gen.m_bin_expr[0] == '(')
-							gen.m_bin_expr.push_back(')');
 						gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
 						gen.m_bin_expr.clear();
 						gen.is_bin_expr = false;
@@ -322,10 +308,7 @@ public:
 					gen.if_expr.push_back(TokenType::notequal);
 				}
 				gen.gen_expr(log_not_equal->rhs);
-				if (gen.m_bin_expr.size() > 2)
-				{
-					if (gen.m_bin_expr[0] == '(')
-						gen.m_bin_expr.push_back(')');
+				if (gen.m_bin_expr.size() > 2){
 					gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
 					gen.m_bin_expr.clear();
 					gen.is_bin_expr = false;
@@ -384,8 +367,6 @@ public:
 				gen.gen_expr(log_greater_equal->lhs);
 				if (gen.if_stat)
 				{
-					if (gen.m_bin_expr[0] == '(')
-						gen.m_bin_expr.push_back(')');
 					if (gen.m_bin_expr.size() > 2)
 					{
 						gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
@@ -397,8 +378,6 @@ public:
 				gen.gen_expr(log_greater_equal->rhs);
 				if (gen.m_bin_expr.size() > 2)
 				{
-					if (gen.m_bin_expr[0] == '(')
-						gen.m_bin_expr.push_back(')');
 					gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
 					gen.m_bin_expr.clear();
 					gen.is_bin_expr = false;
@@ -456,8 +435,6 @@ public:
 				gen.gen_expr(log_lesser_equal->lhs);
 				if (gen.if_stat)
 				{
-					if (gen.m_bin_expr[0] == '(')
-						gen.m_bin_expr.push_back(')');
 					if (gen.m_bin_expr.size() > 2)
 					{
 						gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
@@ -469,8 +446,6 @@ public:
 				gen.gen_expr(log_lesser_equal->rhs);
 				if (gen.m_bin_expr.size() > 2)
 				{
-					if (gen.m_bin_expr[0] == '(')
-						gen.m_bin_expr.push_back(')');
 					gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
 					gen.m_bin_expr.clear();
 					gen.is_bin_expr = false;
@@ -685,7 +660,7 @@ public:
 				{
 					size = gen.m_int_values.at(array->size);
 				}
-				else if(gen.m_arr_vars.contains(array->name))
+				else
 				{
 					size = stoi(array->size);
 				}
@@ -698,68 +673,49 @@ public:
 					}
 				}
 
-				if (!gen.m_arr_vars.contains(array->name))
+				if (!gen.m_arr_vars.contains(array->name) && !gen.is_bin_expr)
 				{
 					std::vector<size_t> arr;
+					std::vector<int> values;
 					for (int i = 0; i < stoi(array->size); i++)
 					{
+						values.push_back(0);
 						arr.push_back(gen.m_stack_size);
 						gen.m_output << "   mov rax,0\n";
 						gen.push("rax");
 					}
 					gen.m_arr_vars[array->name].size = stoi(array->size);
 					gen.m_arr_vars[array->name].arr = arr;
+					gen.m_arr_vars[array->name].values = values;
 					gen.m_arr_vars[array->name].type = array->type;
 					if (gen.temp_vars)
 					{
 						gen.m_arr_name.push_back(array->name);
 					}
 				}
-				else if(!array->value.empty())
+				else if(array->expr != nullptr)
 				{
-					if (gen.m_types.at(array->name) == to_string(array->equalType))
-					{					
-						gen.m_arr_vars.at(array->name).arr[size] = gen.m_stack_size;
-						if (array->equalType == TokenType::int_val)
+					if (gen.m_types.at(array->name) == array->equalType)
+					{			
+						gen.m_cur_var.reset();
+						gen.gen_expr(array->expr);
+						gen.m_arr_vars.at(array->name).arr[size] = gen.m_stack_size - 1;
+						if (gen.m_bin_expr.size() > 0)
 						{
-							gen.m_output << "    mov rax," << array->value << "\n";
-							gen.push("rax");
+							gen.m_arr_vars.at(array->name).values[size] = gen.evaluate(gen.m_bin_expr);
+							gen.m_bin_expr.clear();
 						}
-						else if (array->equalType == TokenType::boolean)
+						else if (gen.if_expr.size() > 0)
 						{
-							gen.m_output << "    mov rax," << array->value << "\n";
-							gen.push("rax");
+							gen.parse_log_expr();
+							gen.m_arr_vars.at(array->name).values[size] = gen.m_values[0];
+							gen.m_bin_expr.clear();
 						}
-						else if (array->equalType == TokenType::variable)
+						else if (gen.value.has_value())
 						{
-							if (gen.m_types.at(array->name) == gen.m_types.at(array->value))
-							{
-								if (gen.m_int_vars.contains(array->name))
-								{
-									const auto& var = gen.m_int_vars.at(array->name);
-									std::stringstream offset;
-									offset << "QWORD [rsp + " << (gen.m_stack_size - var - 1) * 8 << "]\n";
-									gen.push(offset.str());
-								}
-								else if (gen.m_char_vars.contains(array->name))
-								{
-									const auto& var = gen.m_char_vars.at(array->name);
-									std::stringstream offset;
-									offset << "QWORD [rsp + " << (gen.m_stack_size - var - 1) * 8 << "]\n";
-									gen.push(offset.str());
-								}
-								else
-								{
-									std::cerr << "Invalid equalization!!!" << std::endl;
-									exit(EXIT_FAILURE);
-								}
-							}
+							gen.m_arr_vars.at(array->name).values[size] = gen.value.value();
+							gen.value.reset();
 						}
-						else if (array->equalType == TokenType::character)
-						{
-							gen.m_output << "    mov rax,'" << array->value <<"'" << "\n";
-							gen.push("rax");
-						}					
 					}
 					else
 					{
@@ -767,8 +723,13 @@ public:
 						exit(EXIT_FAILURE);
 					}
 				}
-				else if(size > -1 && size < gen.m_arr_vars.at(array->name).size)
+				else if((size > -1 && size < gen.m_arr_vars.at(array->name).size) || gen.is_bin_expr || gen.if_stat)
 				{
+					if (gen.if_stat && !gen.is_bin_expr)
+					{
+						gen.if_expr.push_back(gen.m_arr_vars.at(array->name).values[size]);
+					}
+					gen.value = gen.m_arr_vars.at(array->name).values[size];
 					const auto& var = gen.m_arr_vars.at(array->name).arr[size];
 					std::stringstream offset;
 					offset << "QWORD [rsp + " << (gen.m_stack_size - var - 1) * 8 << "]\n";
@@ -787,6 +748,7 @@ public:
 
 			void operator()(const NodeBinExprSub* sub)
 			{
+				gen.is_bin_expr = true;
 				gen.gen_expr(sub->lhs);
 				if (gen.m_bin_expr.size() > 0)
 				{
@@ -826,6 +788,7 @@ public:
 			}
 			void operator()(const NodeBinExprAdd* add)
 			{
+				gen.is_bin_expr = true;
 				gen.gen_expr(add->lhs);
 				if (gen.m_bin_expr.size() > 0)
 				{
@@ -864,6 +827,7 @@ public:
 			}
 			void operator()(const NodeBinExprMulti* multi)
 			{
+				gen.is_bin_expr = true;
 				gen.gen_expr(multi->lhs);
 				if (gen.m_bin_expr.size() > 0)
 				{
@@ -901,6 +865,7 @@ public:
 			}
 			void operator()(const NodeBinExprDiv* div)
 			{
+				gen.is_bin_expr = true;
 				gen.gen_expr(div->lhs);
 				if (gen.m_bin_expr.size() > 0)
 				{
