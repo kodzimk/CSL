@@ -6,7 +6,6 @@
 int main(int argc,char** argv)
 {
 	std::string filename = "main.csl";
-
     std::string source;
     {
         std::stringstream contents_stream;

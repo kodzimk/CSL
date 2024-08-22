@@ -39,6 +39,8 @@ enum TokenType
 	 opposet,
 	 FALSE,
 	 TRUE,
+	 open_braket,
+	 close_braket,
 };
 inline std::string to_string(const TokenType type)
 {
@@ -68,10 +70,14 @@ inline std::string to_string(const TokenType type)
 	case TokenType::fslash:
 		return "`/`";
 	case TokenType::character:
-			return "character";
+		return "character";
 	case TokenType::open_char:
 		return "character";
+
+	case TokenType::open_braket:
+		return "open_bralet";
 	}
+
 	assert(false);
 }
 struct Token
@@ -253,6 +259,18 @@ public:
 			else if (peek().value()[0] == '(')
 			{
 				tokens.push_back({ .type = TokenType::open_paren });
+				consume();
+				continue;
+			}
+			else if (peek().value()[0] == '[')
+			{
+				tokens.push_back({ .type = TokenType::open_braket });
+				consume();
+				continue;
+			}
+			else if (peek().value()[0] == ']')
+			{
+				tokens.push_back({ .type = TokenType::close_braket });
 				consume();
 				continue;
 			}

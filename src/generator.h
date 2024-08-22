@@ -540,11 +540,20 @@ public:
 				gen.value = stoi(int_val->value.value());
 				gen.m_output << "   mov rax," << int_val->value.value() << '\n';
 				gen.push("rax");
+
+				if (gen.m_cur_var.has_value() && gen.m_arr_vars.contains(gen.m_cur_var.value()) && gen.m_arr_vars.at(gen.m_cur_var.value()).type == "integer")
+				{
+					gen.m_arr_vars.at(gen.m_cur_var.value()).arr[gen.m_arr_vars.at(gen.m_cur_var.value()).current_size] = gen.m_stack_size - 1;
+				}
 			}
 			void operator()(const NodeWordCharVal* char_val)
 			{
 				gen.m_output << "   mov rax,'" << char_val->value.value()<<"'" << '\n';
 				gen.push("rax");
+				if (gen.m_cur_var.has_value() && gen.m_arr_vars.contains(gen.m_cur_var.value()) && gen.m_arr_vars.at(gen.m_cur_var.value()).type == "character")
+				{
+					gen.m_arr_vars.at(gen.m_cur_var.value()).arr[gen.m_arr_vars.at(gen.m_cur_var.value()).current_size] = gen.m_stack_size-1;
+				}
 			}
 			void operator()(const NodeTermOpposet* term_op)
 			{
@@ -606,7 +615,7 @@ public:
 			{
 				if (gen.m_int_vars.contains(term_var->name))
 				{
-					if (gen.if_stat && !gen.is_bin_expr)
+					if (gen.if_stat && !gen.is_bin_expr && gen.m_int_values.contains(term_var->name))
 					{
 						gen.if_expr.push_back(gen.m_int_values.at(term_var->name));
 					}
@@ -615,10 +624,31 @@ public:
 					std::stringstream offset;
 					offset << "QWORD [rsp + " << (gen.m_stack_size - var - 1) * 8 << "]\n";
 					gen.push(offset.str());
+					if (gen.m_cur_var.has_value() && gen.m_arr_vars.contains(gen.m_cur_var.value()) && gen.m_arr_vars.at(gen.m_cur_var.value()).type == "integer")
+					{
+						gen.m_arr_vars.at(gen.m_cur_var.value()).arr[gen.m_arr_vars.at(gen.m_cur_var.value()).current_size] = gen.m_stack_size-1;
+					}
 				}
 				else if (gen.m_char_vars.contains(term_var->name))
 				{
 					const auto& var = gen.m_char_vars.at(term_var->name);
+					std::stringstream offset;
+					offset << "QWORD [rsp + " << (gen.m_stack_size - var - 1) * 8 << "]\n";
+					gen.push(offset.str());
+					if (gen.m_cur_var.has_value() && gen.m_arr_vars.contains(gen.m_cur_var.value()) && gen.m_arr_vars.at(gen.m_cur_var.value()).type == "character")
+					{
+						gen.m_arr_vars.at(gen.m_cur_var.value()).arr[gen.m_arr_vars.at(gen.m_cur_var.value()).current_size] = gen.m_stack_size-1;
+					}
+				}
+				else if (gen.m_arr_vars.contains(term_var->name))
+				{
+					if (gen.m_arr_vars.at(term_var->name).current_size < 0 || gen.m_arr_vars.at(term_var->name).current_size >= gen.m_arr_vars.at(term_var->name).size)
+					{
+						std::cerr << "Out of range of array!!!" << std::endl;
+						exit(EXIT_FAILURE);
+					}
+
+					const auto& var = gen.m_arr_vars.at(term_var->name).arr[gen.m_arr_vars.at(term_var->name).current_size];
 					std::stringstream offset;
 					offset << "QWORD [rsp + " << (gen.m_stack_size - var - 1) * 8 << "]\n";
 					gen.push(offset.str());
@@ -647,6 +677,94 @@ public:
 			void operator()(NodeLogExpr* log_expr)
 			{
 				gen.gen_log_expr(log_expr);
+			}
+			void operator()(NodeTermArray* array)
+			{
+				int size = -1;
+				if (gen.m_int_vars.contains(array->size))
+				{
+					size = gen.m_int_values.at(array->size);
+				}
+				else if(gen.m_arr_vars.contains(array->name))
+				{
+					size = stoi(array->size);
+				}
+				if (gen.m_arr_vars.contains(array->name))
+				{
+					if (gen.m_arr_vars.at(array->name).size <= size || size < 0)
+					{
+						std::cerr << "Out of range of array!!!" << std::endl;
+						exit(EXIT_FAILURE);
+					}
+				}
+
+				if (!gen.m_arr_vars.contains(array->name))
+				{
+					std::vector<size_t> arr;
+					for (int i = 0; i < stoi(array->size); i++)
+					{
+						arr.push_back(gen.m_stack_size);
+						gen.m_output << "   mov rax,0\n";
+						gen.push("rax");
+					}
+					gen.m_arr_vars[array->name].size = stoi(array->size);
+					gen.m_arr_vars[array->name].arr = arr;
+					gen.m_arr_vars[array->name].type = array->type;
+				}
+				else if(!array->value.empty())
+				{
+					if (gen.m_types.at(array->name) == to_string(array->equalType))
+					{					
+						gen.m_arr_vars.at(array->name).arr[size] = gen.m_stack_size;
+						if (array->equalType == TokenType::int_val)
+						{
+							gen.m_output << "    mov rax," << array->value << "\n";
+							gen.push("rax");
+						}
+						else if (array->equalType == TokenType::variable)
+						{
+							if (gen.m_types.at(array->name) == gen.m_types.at(array->value))
+							{
+								if (gen.m_int_vars.contains(array->name))
+								{
+									const auto& var = gen.m_int_vars.at(array->name);
+									std::stringstream offset;
+									offset << "QWORD [rsp + " << (gen.m_stack_size - var - 1) * 8 << "]\n";
+									gen.push(offset.str());
+								}
+								else if (gen.m_char_vars.contains(array->name))
+								{
+									const auto& var = gen.m_char_vars.at(array->name);
+									std::stringstream offset;
+									offset << "QWORD [rsp + " << (gen.m_stack_size - var - 1) * 8 << "]\n";
+									gen.push(offset.str());
+								}
+								else
+								{
+									std::cerr << "Invalid equalization!!!" << std::endl;
+									exit(EXIT_FAILURE);
+								}
+							}
+						}
+						else if (array->equalType == TokenType::character)
+						{
+							gen.m_output << "    mov rax,'" << array->value <<"'" << "\n";
+							gen.push("rax");
+						}					
+					}
+					else
+					{
+						std::cerr << "Invalid equalization!!!" << std::endl;
+						exit(EXIT_FAILURE);
+					}
+				}
+				else if(size > -1 && size < gen.m_arr_vars.at(array->name).size)
+				{
+					const auto& var = gen.m_arr_vars.at(array->name).arr[size];
+					std::stringstream offset;
+					offset << "QWORD [rsp + " << (gen.m_stack_size - var - 1) * 8 << "]\n";
+					gen.push(offset.str());
+				}
 			}
 		};
 		TermVisitor visitor = { .gen = *this };
@@ -932,6 +1050,29 @@ public:
 					gen.pop("rax");
 					gen.m_output << "    call _printnumberRAX\n";
 				}
+				else if (stat_print->type == "variable")
+				{
+					if (gen.m_types.at(stat_print->variableName.value()) == "integer")
+					{
+						gen.gen_expr(stat_print->expr);
+						gen.is_bin_expr = false;
+						gen.pop("rax");
+						gen.m_output << "    call _printnumberRAX\n";
+					}
+					else if (gen.m_types.at(stat_print->variableName.value()) == "character")
+					{
+						gen.gen_expr(stat_print->expr);
+						gen.pop("rax");
+
+						gen.m_output << "    mov [temp]," << "rax" << "\n";
+						gen.m_output << "    mov rax,1" << "\n";
+						gen.m_output << "    mov rsi,temp" << "\n";
+						gen.m_output << "    mov rdi,1" << "\n";
+						gen.m_output << "    mov rdx,1" << "\n";
+						gen.m_output << "    syscall\n";
+						gen.m_output << "    \n";
+					}
+				}
 				else
 				{
 					std::cerr << "Invalid expr!!" << std::endl;
@@ -950,7 +1091,7 @@ public:
 			}
 			void operator()(const NodeStatVar* stat_var)
 			{
-				if (!gen.m_int_vars.contains(stat_var->name) && !gen.m_char_vars.contains(stat_var->name))
+				if (!gen.m_int_vars.contains(stat_var->name) && !gen.m_char_vars.contains(stat_var->name) && !gen.m_arr_vars.contains(stat_var->name))
 				{
 					gen.m_cur_var = stat_var->name;
 					gen.gen_expr(stat_var->expr);
@@ -960,11 +1101,11 @@ public:
 						gen.m_int_values[stat_var->name] = gen.value.value();
 						gen.parse_bin_expr();
 					}
-					else if (stat_var->type != "character")
+					else if (stat_var->type != "character" && !gen.m_arr_vars.contains(stat_var->name))
 						gen.m_int_values[stat_var->name] = gen.value.value();
 					
 
-					if (stat_var->type != "character")
+					if (stat_var->type != "character"&&!gen.m_arr_vars.contains(stat_var->name))
 					{
 						gen.m_int_vars[stat_var->name] = gen.m_stack_size - 1;
 						if (gen.temp_vars)
@@ -972,7 +1113,7 @@ public:
 							gen.m_int_name.push_back(stat_var->name);
 						}
 					}
-					else if (stat_var->type == "character")
+					else if (stat_var->type == "character"&&!gen.m_arr_vars.contains(stat_var->name))
 					{
 						gen.m_char_vars[stat_var->name] = gen.m_stack_size - 1;
 						if (gen.temp_vars)
@@ -991,7 +1132,7 @@ public:
 			}
 			void operator()(const NodeStateEq* stat_eq)
 			{
-				if (gen.m_int_vars.contains(stat_eq->variableName) || gen.m_char_vars.contains(stat_eq->variableName))
+				if (gen.m_int_vars.contains(stat_eq->variableName) || gen.m_char_vars.contains(stat_eq->variableName) || gen.m_arr_vars.contains(stat_eq->variableName))
 				{
 					gen.m_cur_var = stat_eq->variableName;
 					gen.gen_expr(stat_eq->expr);
@@ -1070,18 +1211,26 @@ public:
 			}
 			void operator()(const NodeStatIncerement* inc)
 			{
-				gen.gen_expr(inc->expr);
-				gen.pop("rax");
-				gen.m_output << "   inc rax\n";
-				gen.push("rax");
-
 				if (gen.m_int_vars.contains(inc->variableName))
 				{
+				    gen.gen_expr(inc->expr);
+				    gen.pop("rax");
+				    gen.m_output << "   inc rax\n";
+				    gen.push("rax");
 					gen.m_int_vars.at(inc->variableName) = gen.m_stack_size - 1;
 					int value = gen.m_int_values.at(inc->variableName);
 					value++;
 					gen.m_int_values.at(inc->variableName) = value;
 					gen.value = NULL;
+				}
+				else if (gen.m_arr_vars.contains(inc->variableName))
+				{
+					gen.m_arr_vars.at(inc->variableName).current_size++;
+					if (gen.m_arr_vars.at(inc->variableName).current_size >= gen.m_arr_vars.at(inc->variableName).size)
+					{
+						std::cerr << "Out of range of arrat!" << std::endl;
+						exit(EXIT_FAILURE);
+					}
 				}
 				else
 				{
@@ -1091,18 +1240,27 @@ public:
 			}
 			void operator()(const NodeStatDecrement* dec)
 			{
+				if (gen.m_int_vars.contains(dec->variableName))
+				{
 				gen.gen_expr(dec->expr);
 				gen.pop("rax");
 				gen.m_output << "   dec rax\n";
 				gen.push("rax");
 
-				if (gen.m_int_vars.contains(dec->variableName))
-				{
 					gen.m_int_vars.at(dec->variableName) = gen.m_stack_size - 1;
 					int value = gen.m_int_values.at(dec->variableName);
 					value--;
 					gen.m_int_values.at(dec->variableName) = value;
 					gen.value = NULL;
+				}
+				else if (gen.m_arr_vars.contains(dec->variableName))
+				{
+					gen.m_arr_vars.at(dec->variableName).current_size--;
+					if (gen.m_arr_vars.at(dec->variableName).current_size < 0)
+					{
+						std::cerr << "Out of range of arrat!" << std::endl;
+						exit(EXIT_FAILURE);
+					}
 				}
 				else
 				{
@@ -1777,6 +1935,13 @@ private:
 	}
 private:
 	NodeProg prog;
+	struct Arr_Var
+	{
+		int size = -1;
+		std::vector<size_t> arr;
+		std::string type;
+		int current_size = 0;
+	};
 
 	std::string m_bin_expr;
 	std::stringstream m_bss;
@@ -1790,10 +1955,12 @@ private:
 	std::vector<std::string> m_char_name;
 	std::vector<size_t> m_last_index_of_scope;
 	std::vector<std::variant<int, std::string, TokenType>> if_expr;
+	std::unordered_map<std::string, Arr_Var> m_arr_vars;
+	
 
 	std::unordered_map<std::string, int> m_int_values;
-	std::unordered_map<std::string, size_t> m_char_vars;
 	std::unordered_map<std::string, size_t> m_int_vars;
+	std::unordered_map<std::string, size_t> m_char_vars;
 	std::unordered_map<std::string, std::string> m_types;
 
 	std::optional<int> value;
@@ -1804,8 +1971,8 @@ private:
 
 	int orCount = 0;
 	int cin_count = 0;
-	int current_paren = -1;
 	int carry_count = 0;
+	int current_paren = -1;
 
 	bool if_stat = false;
 	bool temp_vars = false;

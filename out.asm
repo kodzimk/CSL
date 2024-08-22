@@ -12,9 +12,31 @@ temp db 'a',0xA,0xD
 section .text
 global _start
 _start:
-   mov rax,3
+   mov rax,1
+   push rax
+   mov rax,0
+   push rax
+   mov rax,0
+   push rax
+   mov rax,0
+   push rax
+   mov rax,0
+   push rax
+   mov rax,0
+   push rax
+   mov rax,19
    push rax
    push QWORD [rsp + 0]
+
+    pop rax
+    call _printnumberRAX
+   mov rax,9
+   push rax
+   push QWORD [rsp + 0]
+
+    pop rax
+    call _printnumberRAX
+   push QWORD [rsp + 56]
 
    mov rax,0
    push rax
@@ -33,7 +55,7 @@ mov rax,rsi
     cmp rax,0
     je label0
  
-   push QWORD [rsp + 0]
+   push QWORD [rsp + 56]
 
    mov rax,2
    push rax
@@ -50,7 +72,7 @@ label0:
   
    mov rax,' '
    push rax
-    mov rax,'l'
+    mov rax,'f'
    push rax
    push QWORD [rsp + 0]
 

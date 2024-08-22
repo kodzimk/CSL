@@ -136,8 +136,17 @@ struct NodeTermOpposet
 	std::variant <NodeTermIntVal*, NodeTermVar*> var;
 };
 
+struct NodeTermArray
+{
+	std::string type;
+	TokenType equalType;
+	std::string value;
+	std::string name;
+    std::string size;
+};
+
 struct NodeTerm {
-	std::variant<NodeTermIntVal*, NodeTermVar*, NodeTermParen*, NodeWordCharVal*, NodeLogExpr*, NodeTermOpposet*> var;
+	std::variant<NodeTermIntVal*, NodeTermVar*, NodeTermParen*, NodeWordCharVal*, NodeLogExpr*, NodeTermOpposet*,NodeTermArray*> var;
 };
 
 struct NodeExpr {
@@ -219,7 +228,6 @@ struct NodeProg
 	std::vector<NodeStat*> stats;
 };
 
-
 class Parser
 {
 public:
@@ -238,15 +246,39 @@ public:
 			NodeTerm* term = m_allocator.emplace<NodeTerm>();
 			NodeTermIntVal* int_val = m_allocator.emplace<NodeTermIntVal>();
 			int_val->value = int_lit.value().value.value();
+
 			term->var = int_val;
+			return term;
+		}
+		else if (auto int_lit = try_consume(TokenType::minus))
+		{
+			NodeTerm* term = m_allocator.emplace<NodeTerm>();
+			if (auto int_lit = try_consume(TokenType::int_val))
+			{
+				NodeTermIntVal* int_val = m_allocator.emplace<NodeTermIntVal>();
+				int_val->value = int_lit.value().value.value();
+				int_val->value.value().insert(int_val->value.value().begin(),'-');
+				term->var = int_val;
+			}
+			
 			return term;
 		}
 		else if (auto int_lit = try_consume(TokenType::variable))
 		{
 			NodeTerm* term = m_allocator.emplace<NodeTerm>();
-			NodeTermVar* var_val = m_allocator.emplace<NodeTermVar>();
-			var_val->name = int_lit.value().value.value();
-			term->var = var_val;
+			if (auto arr = try_consume(TokenType::open_braket))
+			{
+				NodeTermArray* array1 = m_allocator.emplace<NodeTermArray>();
+				array1->size = consume().value.value();
+				term->var = array1;
+				try_consume(TokenType::close_braket);
+			}
+			else
+			{
+				NodeTermVar* var_val = m_allocator.emplace<NodeTermVar>();
+				var_val->name = int_lit.value().value.value();
+				term->var = var_val;
+			}
 			return term;
 		}
 		else if (auto int_lit = try_consume(TokenType::open_paren))
@@ -294,6 +326,41 @@ public:
 			NodeTerm* word = m_allocator.emplace<NodeTerm>();
 			word->var = char_val;
 			consume();
+			return word;
+		}
+		else if (auto int_lit = try_consume(TokenType::open_braket))
+		{
+			NodeTermArray* array = m_allocator.emplace<NodeTermArray>();
+			if (auto val = try_consume(TokenType::int_val))
+			{
+				array->size = val.value().value.value();
+			}
+			else if(auto val = try_consume(TokenType::variable))
+			{
+				array->size = val.value().value.value();
+			}
+			NodeTerm* word = m_allocator.emplace<NodeTerm>();
+			try_consume_err(TokenType::close_braket);
+			if (try_consume(TokenType::eq))
+			{
+				if (auto val = try_consume(TokenType::int_val))
+				{
+					array->equalType = TokenType::int_val;
+					array->value = val.value().value.value();
+				}
+				else if (auto val = try_consume(TokenType::variable))
+				{
+					array->equalType = TokenType::variable;
+					array->value = val.value().value.value();
+				}
+				else if (auto val = try_consume(TokenType::character))
+				{
+					array->equalType = TokenType::character;
+					array->value = val.value().value.value();
+				}
+			}
+			word->var = array;
+
 			return word;
 		}
 
@@ -823,6 +890,36 @@ public:
 			stat->stat = stat_var;
 			return stat;
 		}
+		else if (peek().has_value() && (peek().value().type == TokenType::integer || peek().value().type == TokenType::boolean || peek().value().type == TokenType::character) 
+			&& peek(1).has_value() && peek(1).value().type == TokenType::variable && peek(2).has_value() && peek(2).value().type == TokenType::open_braket &&
+			peek(3).has_value() && peek(3).value().type == TokenType::int_val)
+		{
+			NodeStat* stat = m_allocator.emplace<NodeStat>();
+			NodeStatVar* stat_var = m_allocator.emplace<NodeStatVar>();
+			stat_var->type = to_string(consume().type);
+			stat_var->name = consume().value.value();
+			stat_var->expr = parse_expr().value();
+			if (m_visit_count != 0)
+			{
+				m_visit_counts.push_back(m_visit_count);
+			}
+			if (auto expr = std::get_if<NodeTerm*>(&stat_var->expr->var))
+			{
+				if (auto array = std::get_if<NodeTermArray*>(&((*expr)->var)))
+				{
+					(*array)->type = stat_var->type;
+					(*array)->name = stat_var->name;
+				}
+				
+			}
+			m_visit_count = 0;
+			consume();
+			bin_expr = false;
+
+			m_vars[stat_var->name] = stat_var->type;
+			stat->stat = stat_var;
+			return stat;
+		}
 		else if (peek().has_value() && peek().value().type == TokenType::variable && peek(1).has_value() && peek(1).value().type == TokenType::eq
 			&& peek(2).has_value() && (peek(2).value().type == TokenType::int_val || peek(2).value().type == TokenType::variable || peek(2).value().type == TokenType::open_char || peek(2).value().type == open_paren))
 		{
@@ -856,6 +953,32 @@ public:
 			stat->stat = stat_eq;
 			return stat;
 		}
+		else if (peek().has_value() && peek().value().type == TokenType::variable && peek(1).has_value() && peek(1).value().type == TokenType::open_braket
+			 && peek(2).has_value() && (peek(2).value().type == TokenType::int_val || peek(2).value().type == TokenType::variable) && peek(3).has_value() && peek(3).value().type == TokenType::close_braket &&
+			    peek(4).has_value() && peek(4).value().type == TokenType::eq)
+			{
+				NodeStat* stat = m_allocator.emplace<NodeStat>();
+				NodeStateEq* stat_eq = m_allocator.emplace<NodeStateEq>();
+				stat_eq->variableName = consume().value.value();
+				stat_eq->expr = parse_expr().value();
+				if (m_visit_count != 0)
+				{
+					m_visit_counts.push_back(m_visit_count);
+				}
+				if (auto expr = std::get_if<NodeTerm*>(&stat_eq->expr->var))
+				{
+					if (auto array = std::get_if<NodeTermArray*>(&((*expr)->var)))
+					{
+						(*array)->name = stat_eq->variableName;
+					}
+				}
+				m_visit_count = 0;
+				consume();
+				bin_expr = false;
+
+				stat->stat = stat_eq;
+				return stat;
+		    }
 		else if (peek().has_value() && peek().value().type == TokenType::character && peek(1).has_value() && peek(1).value().type == TokenType::variable &&
 			peek(2).has_value() && peek(2).value().type == TokenType::eq)
 		{
@@ -910,6 +1033,14 @@ public:
 				stat_print->variableName = peek().value().value.value();
 
 			stat_print->expr = parse_expr().value();
+			if (auto term = std::get_if<NodeTerm*>(&stat_print->expr->var))
+			{
+				if (auto arr = std::get_if<NodeTermArray*>(&((*term)->var)))
+				{
+					(*arr)->name = stat_print->variableName.value();
+				}
+			}
+
 			if (m_visit_count != 0)
 			{
 				m_visit_counts.push_back(m_visit_count);
@@ -1074,14 +1205,14 @@ private:
 private:
 	size_t m_index = 0;
 	bool bin_expr = false;
-	bool count_paren = false;
 	bool opposet_on = false;
+	bool count_paren = false;
 	ArenaAllocator m_allocator;
 	std::vector<Token> m_tokens;
 public:
 	int cin_count = 0;
 	int m_visit_count = 0;
-	std::vector<int> m_visit_counts;
 	std::vector<int> m_paren_count;
+	std::vector<int> m_visit_counts;
 	std::unordered_map<std::string, std::string> m_vars;
 };

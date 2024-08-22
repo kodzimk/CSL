@@ -1,11 +1,19 @@
 int main()
 {
 
-  int a = 3;
-  
+  int a = 1;
+  int b[5];
+  b = 19;
+    printf(b);
+   b++;
+   b = 9;
+
+   printf(b);
+
+
   if(a > 0)
   {
-  a = a + 2;
+   a = a + 2;
    printf(a);
 
   }
