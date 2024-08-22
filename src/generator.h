@@ -42,10 +42,8 @@ public:
 			}
 			void operator()(const NodeLogExprParen* log_paren)
 			{
-				gen.if_expr.push_back(TokenType::open_paren);
 				gen.temp_log_expr = nullptr;
 				gen.gen_expr(log_paren->lhs);
-				gen.if_expr.push_back(TokenType::close_paren);
 				gen.m_bin_expr.clear();
 				while (gen.temp_log_expr != nullptr)
 				{
@@ -640,12 +638,13 @@ public:
 			}
 			void operator()(NodeTermParen* term_paren)
 			{
+				gen.if_expr.push_back(TokenType::open_paren);
 				gen.current_paren++;
 				gen.count_paren = true;
 				gen.m_bin_expr += "(";
 				gen.gen_expr(term_paren->expr);
 				gen.m_bin_expr += ")";
-
+				gen.if_expr.push_back(TokenType::close_paren);
 				gen.m_paren_count.erase(gen.m_paren_count.begin() + gen.current_paren);
 				gen.current_paren--;
 				gen.count_paren = false;

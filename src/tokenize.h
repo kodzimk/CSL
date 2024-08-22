@@ -74,7 +74,7 @@ inline std::string to_string(const TokenType type)
 	case TokenType::open_char:
 		return "character";
 	case TokenType::boolean:
-	    return "boolean";
+	    return "boo";
 	case TokenType::open_braket:
 		return "open_bralet";
 	}
