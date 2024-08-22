@@ -40,7 +40,7 @@ _start:
    push rax
    push QWORD [rsp + 0]
 
-   mov rax,2
+   mov rax,1
    push rax
     pop rbx
     pop rax
