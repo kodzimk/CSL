@@ -284,13 +284,10 @@ public:
 		}
 		else if (auto int_lit = try_consume(TokenType::open_paren))
 		{
-			count_paren = true;
-			m_paren_count.push_back(0);
 			std::optional<NodeExpr*> expr = parse_expr();
 			if (!expr.has_value()) {
 				error_expected("expression");
 			}
-			count_paren = false;
 			bin_expr = false;
 			try_consume_err(TokenType::close_paren);
 			NodeTermParen* term_paren = m_allocator.emplace<NodeTermParen>();
@@ -346,13 +343,21 @@ public:
 			{
 				if (peek().value().type == TokenType::int_val)
 					array->equalType = to_string(peek().value().type);
-				else if(peek().value().type == TokenType::character)
+				else if (peek().value().type == TokenType::character)
 					array->equalType = to_string(peek().value().type);
 				else if (peek().value().type == TokenType::boolean)
 					array->equalType = to_string(peek().value().type);
 				else if (peek().value().type == TokenType::variable)
 					array->equalType = m_vars.at(peek().value().value.value());
+				else if (peek().value().type == TokenType::open_paren)
+					array->equalType = to_string(TokenType::integer);
+
 				array->expr = parse_expr().value();
+				if (m_visit_count != 0)
+				{
+					m_visit_counts.push_back(m_visit_count);
+				}
+				m_visit_count = 0;
 			}
 			word->var = array;
 
@@ -398,32 +403,24 @@ public:
 					auto add = m_allocator.emplace<NodeBinExprAdd>(expr_lhs2, expr_rhs.value());
 					expr->var = add;
 					m_visit_count++;
-					if (count_paren)
-						m_paren_count[m_paren_count.size() - 1]++;
 				}
 				else if (type == TokenType::star) {
 					expr_lhs2->var = expr_lhs->var;
 					auto multi = m_allocator.emplace<NodeBinExprMulti>(expr_lhs2, expr_rhs.value());
 					expr->var = multi;
 					m_visit_count++;
-					if (count_paren)
-						m_paren_count[m_paren_count.size() - 1]++;
 				}
 				else if (type == TokenType::minus) {
 					expr_lhs2->var = expr_lhs->var;
 					auto sub = m_allocator.emplace<NodeBinExprSub>(expr_lhs2, expr_rhs.value());
 					expr->var = sub;
 					m_visit_count++;
-					if (count_paren)
-						m_paren_count[m_paren_count.size() - 1]++;
 				}
 				else if (type == TokenType::fslash) {
 					expr_lhs2->var = expr_lhs->var;
 					auto div = m_allocator.emplace<NodeBinExprDiv>(expr_lhs2, expr_rhs.value());
 					expr->var = div;
 					m_visit_count++;
-					if (count_paren)
-						m_paren_count[m_paren_count.size() - 1]++;
 				}
 				else {
 					assert(false);
@@ -1187,13 +1184,11 @@ private:
 	size_t m_index = 0;
 	bool bin_expr = false;
 	bool opposet_on = false;
-	bool count_paren = false;
 	ArenaAllocator m_allocator;
 	std::vector<Token> m_tokens;
 public:
 	int cin_count = 0;
 	int m_visit_count = 0;
-	std::vector<int> m_paren_count;
 	std::vector<int> m_visit_counts;
 	std::unordered_map<std::string, std::string> m_vars;
 };

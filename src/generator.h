@@ -17,12 +17,10 @@ using namespace std;
 class Generator
 {
 public:
-	Generator(NodeProg prog, std::unordered_map<std::string, std::string> m_types, std::vector<int> m_visit_counts, std::vector<int> m_paren_count,int cin_count)
+	Generator(NodeProg prog, std::unordered_map<std::string, std::string> m_types, std::vector<int> m_visit_counts)
 		: prog(prog),
 		m_types(m_types),
-		m_visit_counts(m_visit_counts),
-		m_paren_count(m_paren_count),
-		cin_count(cin_count)
+		m_visit_counts(m_visit_counts)
 	{
 
 	}
@@ -41,8 +39,7 @@ public:
 
 			}
 			void operator()(const NodeLogExprParen* log_paren)
-			{
-			
+			{		
 				gen.temp_log_expr = nullptr;
 				gen.gen_expr(log_paren->lhs);
 				gen.m_bin_expr.clear();
@@ -89,23 +86,28 @@ public:
 			{
 				gen.temp_log_expr = nullptr;
 				gen.gen_expr(log_greater->lhs);
-				if (gen.if_stat)
-				{
-					if (gen.m_bin_expr.size() > 2)
+
+					if (gen.is_bin_expr && gen.m_bin_expr.size() > 2)
 					{
+						if (count(gen.m_bin_expr.begin(), gen.m_bin_expr.end(), '(') - 1 == count(gen.m_bin_expr.begin(), gen.m_bin_expr.end(), ')'))
+							gen.m_bin_expr.push_back(')');
+
 						gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
 						gen.m_bin_expr.clear();
 						gen.is_bin_expr = false;
 					}
 					gen.if_expr.push_back(TokenType::greater);
-				}
+				
 				gen.gen_expr(log_greater->rhs);
-				if (gen.m_bin_expr.size() > 2)
+				if (gen.is_bin_expr && gen.m_bin_expr.size() > 2)
 				{
+					if (count(gen.m_bin_expr.begin(), gen.m_bin_expr.end(), '(') - 1 == count(gen.m_bin_expr.begin(), gen.m_bin_expr.end(), ')'))
+						gen.m_bin_expr.push_back(')');
 					gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
 					gen.m_bin_expr.clear();
 					gen.is_bin_expr = false;
 				}
+
 				gen.pop("rbx");
 				gen.pop("rax");
 				gen.m_output << "    mov rsi, 1\n";
@@ -151,35 +153,34 @@ public:
 					}
 					gen.temp_log_expr = log_greater->varOr.value()->lhs;
 					gen.orCount++;
-					if (gen.count_paren)
-					{
+
 						gen.is_bin_expr = false;
 						while (gen.temp_log_expr != nullptr)
 						{
 							gen.gen_expr(gen.temp_log_expr.value());
 							gen.is_bin_expr = false;
 						}
-					}
 				}
 			}
 			void operator()(const NodeLogExprLesser* log_lesser)
 			{
 				gen.temp_log_expr = nullptr;
 				gen.gen_expr(log_lesser->lhs);
-				if (gen.if_stat)
-				{
-					if (gen.m_bin_expr.size() > 2)
+					if (gen.is_bin_expr && gen.m_bin_expr.size() > 2)
 					{
-
+						if (count(gen.m_bin_expr.begin(), gen.m_bin_expr.end(), '(') - 1 == count(gen.m_bin_expr.begin(), gen.m_bin_expr.end(), ')'))
+							gen.m_bin_expr.push_back(')');
 						gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
 						gen.m_bin_expr.clear();
 						gen.is_bin_expr = false;
 					}
 					gen.if_expr.push_back(TokenType::lesser);
-				}
+
 				gen.gen_expr(log_lesser->rhs);
-				if (gen.m_bin_expr.size() > 2)
+				if (gen.is_bin_expr && gen.m_bin_expr.size() > 2)
 				{
+					if (count(gen.m_bin_expr.begin(), gen.m_bin_expr.end(), '(') - 1 == count(gen.m_bin_expr.begin(), gen.m_bin_expr.end(), ')'))
+						gen.m_bin_expr.push_back(')');
 					gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
 					gen.m_bin_expr.clear();
 					gen.is_bin_expr = false;
@@ -229,25 +230,32 @@ public:
 					}
 					gen.temp_log_expr = log_lesser->varOr.value()->lhs;
 					gen.orCount++;
+						gen.is_bin_expr = false;
+						while (gen.temp_log_expr != nullptr)
+						{
+							gen.gen_expr(gen.temp_log_expr.value());
+							gen.is_bin_expr = false;
+						}
 				}
 			}
 			void operator()(const NodeLogExprEqual* log_equal)
 			{
 				gen.temp_log_expr = nullptr;
 				gen.gen_expr(log_equal->lhs);
-				if (gen.if_stat)
-				{
-					if (gen.m_bin_expr.size() > 2)
+					if (gen.is_bin_expr && gen.m_bin_expr.size() > 2)
 					{
+						if (count(gen.m_bin_expr.begin(), gen.m_bin_expr.end(), '(') - 1 == count(gen.m_bin_expr.begin(), gen.m_bin_expr.end(), ')'))
+							gen.m_bin_expr.push_back(')');
 						gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
 						gen.m_bin_expr.clear();
 						gen.is_bin_expr = false;
 					}
 					gen.if_expr.push_back(TokenType::equal);
-				}
 				gen.gen_expr(log_equal->rhs);
-				if (gen.m_bin_expr.size() > 2)
+				if (gen.is_bin_expr && gen.m_bin_expr.size() > 2)
 				{
+					if (count(gen.m_bin_expr.begin(), gen.m_bin_expr.end(), '(') - 1 == count(gen.m_bin_expr.begin(), gen.m_bin_expr.end(), ')'))
+						gen.m_bin_expr.push_back(')');
 					gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
 					gen.m_bin_expr.clear();
 					gen.is_bin_expr = false;
@@ -297,24 +305,31 @@ public:
 					}
 					gen.temp_log_expr = log_equal->varOr.value()->lhs;
 					gen.orCount++;
+						gen.is_bin_expr = false;
+						while (gen.temp_log_expr != nullptr)
+						{
+							gen.gen_expr(gen.temp_log_expr.value());
+							gen.is_bin_expr = false;
+						}
 				}
 			}
 			void operator()(const NodeLogExprNotEqual* log_not_equal)
 			{
 				gen.temp_log_expr = nullptr;
 				gen.gen_expr(log_not_equal->lhs);
-				if (gen.if_stat)
-				{
-					if (gen.m_bin_expr.size() > 2)
+					if (gen.is_bin_expr && gen.m_bin_expr.size() > 2)
 					{
+						if (count(gen.m_bin_expr.begin(), gen.m_bin_expr.end(), '(') - 1 == count(gen.m_bin_expr.begin(), gen.m_bin_expr.end(), ')'))
+							gen.m_bin_expr.push_back(')');
 						gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
 						gen.m_bin_expr.clear();
 						gen.is_bin_expr = false;
 					}
 					gen.if_expr.push_back(TokenType::notequal);
-				}
 				gen.gen_expr(log_not_equal->rhs);
-				if (gen.m_bin_expr.size() > 2){
+				if (gen.is_bin_expr && gen.m_bin_expr.size() > 2){
+					if (count(gen.m_bin_expr.begin(), gen.m_bin_expr.end(), '(') - 1 == count(gen.m_bin_expr.begin(), gen.m_bin_expr.end(), ')'))
+						gen.m_bin_expr.push_back(')');
 					gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
 					gen.m_bin_expr.clear();
 					gen.is_bin_expr = false;
@@ -364,6 +379,12 @@ public:
 					}
 					gen.temp_log_expr = log_not_equal->varOr.value()->lhs;
 					gen.orCount++;
+						gen.is_bin_expr = false;
+						while (gen.temp_log_expr != nullptr)
+						{
+							gen.gen_expr(gen.temp_log_expr.value());
+							gen.is_bin_expr = false;
+						}
 				}
 
 			}
@@ -371,19 +392,21 @@ public:
 			{
 				gen.temp_log_expr = nullptr;
 				gen.gen_expr(log_greater_equal->lhs);
-				if (gen.if_stat)
-				{
-					if (gen.m_bin_expr.size() > 2)
+					if (gen.is_bin_expr && gen.m_bin_expr.size() > 2)
 					{
+						if (count(gen.m_bin_expr.begin(), gen.m_bin_expr.end(), '(') - 1 == count(gen.m_bin_expr.begin(), gen.m_bin_expr.end(), ')'))
+							gen.m_bin_expr.push_back(')');
 						gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
 						gen.m_bin_expr.clear();
 						gen.is_bin_expr = false;
 					}
 					gen.if_expr.push_back(TokenType::greaterequal);
-				}
+
 				gen.gen_expr(log_greater_equal->rhs);
-				if (gen.m_bin_expr.size() > 2)
+				if (gen.is_bin_expr && gen.m_bin_expr.size() > 2)
 				{
+					if (count(gen.m_bin_expr.begin(), gen.m_bin_expr.end(), '(') - 1 == count(gen.m_bin_expr.begin(), gen.m_bin_expr.end(), ')'))
+						gen.m_bin_expr.push_back(')');
 					gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
 					gen.m_bin_expr.clear();
 					gen.is_bin_expr = false;
@@ -433,25 +456,34 @@ public:
 					}
 					gen.temp_log_expr = log_greater_equal->varOr.value()->lhs;
 					gen.orCount++;
+						gen.is_bin_expr = false;
+						while (gen.temp_log_expr != nullptr)
+						{
+							gen.gen_expr(gen.temp_log_expr.value());
+							gen.is_bin_expr = false;
+						}
+
 				}
 			}
 			void operator()(const NodeLogExprLesserEqual* log_lesser_equal)
 			{
 				gen.temp_log_expr = nullptr;
 				gen.gen_expr(log_lesser_equal->lhs);
-				if (gen.if_stat)
-				{
-					if (gen.m_bin_expr.size() > 2)
+					if (gen.is_bin_expr && gen.m_bin_expr.size() > 2)
 					{
+						if (count(gen.m_bin_expr.begin(), gen.m_bin_expr.end(), '(') - 1 == count(gen.m_bin_expr.begin(), gen.m_bin_expr.end(), ')'))
+							gen.m_bin_expr.push_back(')');
 						gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
 						gen.m_bin_expr.clear();
 						gen.is_bin_expr = false;
 					}
 					gen.if_expr.push_back(TokenType::lesserequal);
-				}
+				
 				gen.gen_expr(log_lesser_equal->rhs);
-				if (gen.m_bin_expr.size() > 2)
+				if (gen.is_bin_expr && gen.m_bin_expr.size() > 2)
 				{
+					if (count(gen.m_bin_expr.begin(), gen.m_bin_expr.end(), '(') - 1 == count(gen.m_bin_expr.begin(), gen.m_bin_expr.end(), ')'))
+						gen.m_bin_expr.push_back(')');
 					gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
 					gen.m_bin_expr.clear();
 					gen.is_bin_expr = false;
@@ -501,6 +533,12 @@ public:
 					}
 					gen.temp_log_expr = log_lesser_equal->varOr.value()->lhs;
 					gen.orCount++;
+						gen.is_bin_expr = false;
+						while (gen.temp_log_expr != nullptr)
+						{
+							gen.gen_expr(gen.temp_log_expr.value());
+							gen.is_bin_expr = false;
+						}
 				}
 			}
 		};
@@ -628,7 +666,14 @@ public:
 						std::cerr << "Out of range of array!!!" << std::endl;
 						exit(EXIT_FAILURE);
 					}
-
+					if (gen.if_stat && !gen.is_bin_expr)
+					{
+						gen.if_expr.push_back(gen.m_arr_vars.at(term_var->name).values[gen.m_arr_vars.at(term_var->name).current_size]);
+					}
+					if (gen.is_bin_expr)
+					{
+						gen.value = gen.m_arr_vars.at(term_var->name).values[gen.m_arr_vars.at(term_var->name).current_size];
+					}
 					const auto& var = gen.m_arr_vars.at(term_var->name).arr[gen.m_arr_vars.at(term_var->name).current_size];
 					std::stringstream offset;
 					offset << "QWORD [rsp + " << (gen.m_stack_size - var - 1) * 8 << "]\n";
@@ -644,21 +689,27 @@ public:
 			}
 			void operator()(NodeTermParen* term_paren)
 			{
-				if (gen.if_stat)
+				bool paren = false;
+				if (gen.if_stat && !gen.is_bin_expr)
+				{
 					gen.if_expr.push_back(TokenType::open_paren);
+					paren = true;
+				}
 
-				gen.current_paren++;
-				gen.count_paren = true;
-				gen.m_bin_expr.clear();
 				gen.m_bin_expr += "(";
+				gen.count_paren = true;
 				gen.gen_expr(term_paren->expr);
-				gen.m_bin_expr += ")";
-				if (gen.if_stat)
+				gen.count_paren = false;
+				if (gen.value.has_value() && gen.is_bin_expr)
+				{
+					gen.m_bin_expr += std::to_string(gen.value.value());
+					gen.value.reset();
+				}
+
+				if (gen.if_stat && !gen.is_bin_expr && paren)
 					gen.if_expr.push_back(TokenType::close_paren);
 
-				gen.m_paren_count.erase(gen.m_paren_count.begin() + gen.current_paren);
-				gen.current_paren--;
-				gen.count_paren = false;
+				gen.m_bin_expr += ")";
 			}
 			void operator()(NodeLogExpr* log_expr)
 			{
@@ -759,7 +810,6 @@ public:
 
 			void operator()(const NodeBinExprSub* sub)
 			{
-				gen.is_bin_expr = true;
 				gen.gen_expr(sub->lhs);
 				if (gen.m_bin_expr.size() > 0)
 				{
@@ -781,12 +831,12 @@ public:
 				gen.value.reset();
 				gen.gen_expr(sub->rhs);
 				gen.m_visit_counts[0]--;
-				if (gen.count_paren)
-					gen.m_paren_count[gen.current_paren]--;
 
-				if (gen.m_visit_counts[0] == 0 || (gen.m_paren_count.size() > 0 && gen.m_paren_count[gen.current_paren] == 0))
+				if (gen.m_visit_counts[0] == 0)
 				{
+					if(gen.value.has_value())
 					gen.m_bin_expr += std::to_string(gen.value.value());
+					gen.value.reset();
 					if (gen.m_visit_counts[0] == 0)
 						gen.m_visit_counts.erase(gen.m_visit_counts.begin());
 				}
@@ -799,7 +849,6 @@ public:
 			}
 			void operator()(const NodeBinExprAdd* add)
 			{
-				gen.is_bin_expr = true;
 				gen.gen_expr(add->lhs);
 				if (gen.m_bin_expr.size() > 0)
 				{
@@ -821,12 +870,12 @@ public:
 				gen.gen_expr(add->rhs);
 
 				gen.m_visit_counts[0]--;
-				if (gen.count_paren)
-					gen.m_paren_count[gen.current_paren]--;
 
-				if (gen.m_visit_counts[0] == 0 || (gen.m_paren_count.size() > 0 && gen.m_paren_count[gen.current_paren] == 0))
+				if (gen.m_visit_counts[0] == 0)
 				{
+					if(gen.value.has_value())
 					gen.m_bin_expr += std::to_string(gen.value.value());
+					gen.value.reset();
 					if (gen.m_visit_counts[0] == 0)
 						gen.m_visit_counts.erase(gen.m_visit_counts.begin());
 				}
@@ -838,7 +887,6 @@ public:
 			}
 			void operator()(const NodeBinExprMulti* multi)
 			{
-				gen.is_bin_expr = true;
 				gen.gen_expr(multi->lhs);
 				if (gen.m_bin_expr.size() > 0)
 				{
@@ -860,12 +908,12 @@ public:
 				gen.gen_expr(multi->rhs);
 				gen.m_visit_counts[0]--;
 
-				if (gen.count_paren)
-					gen.m_paren_count[gen.current_paren]--;
-
-				if (gen.m_visit_counts[0] == 0 || (gen.m_paren_count.size() > 0 && gen.m_paren_count[gen.current_paren] == 0))
+				if (gen.m_visit_counts[0] == 0)
 				{
+					if(gen.value.has_value())
 					gen.m_bin_expr += std::to_string(gen.value.value());
+
+					gen.value.reset();
 					if (gen.m_visit_counts[0] == 0)
 						gen.m_visit_counts.erase(gen.m_visit_counts.begin());
 				}
@@ -876,7 +924,6 @@ public:
 			}
 			void operator()(const NodeBinExprDiv* div)
 			{
-				gen.is_bin_expr = true;
 				gen.gen_expr(div->lhs);
 				if (gen.m_bin_expr.size() > 0)
 				{
@@ -898,12 +945,11 @@ public:
 				gen.gen_expr(div->rhs);
 				gen.m_visit_counts[0]--;
 
-				if (gen.count_paren)
-					gen.m_paren_count[gen.current_paren]--;
-
-				if (gen.m_visit_counts[0] == 0 || (gen.m_paren_count.size() > 0 && gen.m_paren_count[gen.current_paren] == 0))
+				if (gen.m_visit_counts[0] == 0)
 				{
+					if(gen.value.has_value())
 					gen.m_bin_expr += std::to_string(gen.value.value());
+					gen.value.reset();
 					if (gen.m_visit_counts[0] == 0)
 						gen.m_visit_counts.erase(gen.m_visit_counts.begin());
 				}
@@ -956,11 +1002,6 @@ public:
 				gen.if_stat = true;
 				gen.gen_expr(elif->expr);
 				gen.is_bin_expr = false;
-				while (gen.temp_log_expr != nullptr)
-				{
-					gen.gen_expr(gen.temp_log_expr.value());
-					gen.is_bin_expr = false;
-				}
 				gen.if_stat = false;
 				gen.log_expr_or();
 				gen.pop("rax");
@@ -1192,11 +1233,6 @@ public:
 				gen.if_stat = true;
 				gen.gen_expr(stmt_if->expr);
 				gen.is_bin_expr = false;
-				while (gen.temp_log_expr != nullptr)
-				{
-					gen.gen_expr(gen.temp_log_expr.value());
-					gen.is_bin_expr = false;
-				}
 				gen.if_stat = false;
 
 				gen.log_expr_or();
@@ -1981,14 +2017,13 @@ private:
 	std::stringstream m_output;
 
 	std::vector<int> m_values;
-	std::vector<int> m_paren_count;
 	std::vector<int> m_visit_counts;
 	std::vector<std::string> m_int_name;
 	std::vector<std::string> m_arr_name;
 	std::vector<std::string> m_char_name;
 	std::vector<size_t> m_last_index_of_scope;
-	std::vector<std::variant<int, std::string, TokenType>> if_expr;
 	std::unordered_map<std::string, Arr_Var> m_arr_vars;
+	std::vector<std::variant<int, std::string, TokenType>> if_expr;
 	
 
 	std::unordered_map<std::string, int> m_int_values;
@@ -2003,9 +2038,7 @@ private:
 	size_t m_stack_size = 0;
 
 	int orCount = 0;
-	int cin_count = 0;
 	int carry_count = 0;
-	int current_paren = -1;
 
 	bool if_stat = false;
 	bool temp_vars = false;
