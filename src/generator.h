@@ -42,7 +42,7 @@ public:
 			}
 			void operator()(const NodeLogExprParen* log_paren)
 			{
-				gen.if_expr.push_back(TokenType::open_paren);
+			
 				gen.temp_log_expr = nullptr;
 				gen.gen_expr(log_paren->lhs);
 				gen.m_bin_expr.clear();
@@ -51,7 +51,7 @@ public:
 					gen.gen_expr(gen.temp_log_expr.value());
 					gen.is_bin_expr = false;
 				}
-				gen.if_expr.push_back(TokenType::close_paren);
+			
 				if (log_paren->varAnd.has_value())
 				{
 					if (gen.if_stat)
@@ -128,11 +128,6 @@ public:
 					}
 
 					gen.gen_expr(log_greater->varAnd.value()->lhs);
-					if (gen.m_bin_expr.size() > 0)
-					{
-						gen.if_expr.push_back(gen.evaluate(gen.m_bin_expr));
-						gen.m_bin_expr.clear();
-					}
 					gen.pop("rax");
 					gen.pop("rbx");
 					gen.m_output << "    mov rsi, 1\n";
@@ -156,6 +151,15 @@ public:
 					}
 					gen.temp_log_expr = log_greater->varOr.value()->lhs;
 					gen.orCount++;
+					if (gen.count_paren)
+					{
+						gen.is_bin_expr = false;
+						while (gen.temp_log_expr != nullptr)
+						{
+							gen.gen_expr(gen.temp_log_expr.value());
+							gen.is_bin_expr = false;
+						}
+					}
 				}
 			}
 			void operator()(const NodeLogExprLesser* log_lesser)
@@ -640,12 +644,17 @@ public:
 			}
 			void operator()(NodeTermParen* term_paren)
 			{
-				
+				if (gen.if_stat)
+					gen.if_expr.push_back(TokenType::open_paren);
+
 				gen.current_paren++;
 				gen.count_paren = true;
+				gen.m_bin_expr.clear();
 				gen.m_bin_expr += "(";
 				gen.gen_expr(term_paren->expr);
 				gen.m_bin_expr += ")";
+				if (gen.if_stat)
+					gen.if_expr.push_back(TokenType::close_paren);
 
 				gen.m_paren_count.erase(gen.m_paren_count.begin() + gen.current_paren);
 				gen.current_paren--;
