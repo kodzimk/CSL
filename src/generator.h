@@ -697,9 +697,7 @@ public:
 				}
 
 				gen.m_bin_expr += "(";
-				gen.count_paren = true;
 				gen.gen_expr(term_paren->expr);
-				gen.count_paren = false;
 				if (gen.value.has_value() && gen.is_bin_expr)
 				{
 					gen.m_bin_expr += std::to_string(gen.value.value());
@@ -796,6 +794,39 @@ public:
 					std::stringstream offset;
 					offset << "QWORD [rsp + " << (gen.m_stack_size - var - 1) * 8 << "]\n";
 					gen.push(offset.str());
+				}
+			}
+			void operator()(NodeTermString* str)
+			{
+				if (!gen.m_string_vars.contains(str->name))
+				{
+					std::vector<size_t> arr;
+					std::vector<char> values;
+					for (int i = 0; i < str->value.value().size(); i++)
+					{
+						values.push_back(str->value.value()[i]);
+						arr.push_back(gen.m_stack_size);
+						gen.m_output << "   mov rax,'" << str->value.value()[i] << "'" << std::endl;
+						gen.push("rax");
+					}
+					gen.m_string_vars[str->name].size = str->value.value().size();
+					gen.m_string_vars[str->name].arr = arr;
+					gen.m_string_vars[str->name].values = values;
+				}
+				else if (gen.m_string_vars.contains(str->name) && str->value.has_value())
+				{
+					std::vector<size_t> arr;
+					std::vector<char> values;
+					for (int i = 0; i < str->value.value().size(); i++)
+					{
+						values.push_back(str->value.value()[i]);
+						arr.push_back(gen.m_stack_size);
+						gen.m_output << "   mov rax,'" << str->value.value()[i] << "'" << std::endl;
+						gen.push("rax");
+					}
+					gen.m_string_vars.at(str->name).size = str->value.value().size();
+					gen.m_string_vars.at(str->name).arr = arr;
+					gen.m_string_vars.at(str->name).values = values;
 				}
 			}
 		};
@@ -1128,6 +1159,22 @@ public:
 						gen.pop("rax");
 						gen.m_output << "    call _printnumberRAX\n";
 					}
+					else if (gen.m_types.at(stat_print->variableName.value()) == "string" && gen.m_string_vars.contains(stat_print->variableName.value()))
+					{
+						std::string text;
+						for (int i = 0; i < gen.m_string_vars.at(stat_print->variableName.value()).size; i++)
+						{
+							text += gen.m_string_vars.at(stat_print->variableName.value()).values[i];
+						}
+						
+						gen.m_output << "    mov [temp]," << "qword '" << text << "'" << "\n";
+						gen.m_output << "    mov rax,1" << "\n";
+						gen.m_output << "    mov rsi,temp" << "\n";
+						gen.m_output << "    mov rdi,1" << "\n";
+						gen.m_output << "    mov rdx," << text.size()<< "\n";
+						gen.m_output << "    syscall\n";
+						gen.m_output << "    \n";
+					}
 				}
 				else
 				{
@@ -1157,11 +1204,11 @@ public:
 						gen.m_int_values[stat_var->name] = gen.value.value();
 						gen.parse_bin_expr();
 					}
-					else if (stat_var->type != "character" && !gen.m_arr_vars.contains(stat_var->name))
+					else if (stat_var->type != "character" && !gen.m_arr_vars.contains(stat_var->name) && stat_var->type != "string")
 						gen.m_int_values[stat_var->name] = gen.value.value();
 					
 
-					if (stat_var->type != "character"&&!gen.m_arr_vars.contains(stat_var->name))
+					if (stat_var->type != "character" && stat_var->type != "string"  &&!gen.m_arr_vars.contains(stat_var->name))
 					{
 						gen.m_int_vars[stat_var->name] = gen.m_stack_size - 1;
 						if (gen.temp_vars)
@@ -1169,7 +1216,7 @@ public:
 							gen.m_int_name.push_back(stat_var->name);
 						}
 					}
-					else if (stat_var->type == "character"&&!gen.m_arr_vars.contains(stat_var->name))
+					else if (stat_var->type == "character" && stat_var->type != "string" &&!gen.m_arr_vars.contains(stat_var->name))
 					{
 						gen.m_char_vars[stat_var->name] = gen.m_stack_size - 1;
 						if (gen.temp_vars)
@@ -1365,9 +1412,9 @@ public:
 		m_data << "section .data\n";
 		m_data << "text       times 255 db 0\n";
 		m_data << "textSize   equ $ - text\n";
-		m_data << "newLineMsg db 0xA, 0xD\n";
+		m_data << "newLineMsg dw   0xA, 0xD\n";
 		m_data << "newLineLen equ $ - newLineMsg\n";
-		m_data << "temp db 'a',0xA,0xD\n";
+		m_data << "temp dq  '',0xA,0xD\n";
 
 
 		m_output << "section .text\n";
@@ -1439,7 +1486,7 @@ private:
 		case '/': return a / b;
 		}
 	}
-	int evaluate(string tokens) {
+	int evaluate(std::string tokens) {
 		int i;
 
 		stack <int> values;
@@ -2009,6 +2056,12 @@ private:
 		std::vector<int> values;
 		std::string type;
 		int current_size = 0;
+	}; 
+	struct STR_Var
+	{
+		int size = -1;
+		std::vector<size_t> arr;
+		std::vector<char> values;
 	};
 
 	std::string m_bin_expr;
@@ -2023,6 +2076,7 @@ private:
 	std::vector<std::string> m_char_name;
 	std::vector<size_t> m_last_index_of_scope;
 	std::unordered_map<std::string, Arr_Var> m_arr_vars;
+	std::unordered_map<std::string, STR_Var> m_string_vars;
 	std::vector<std::variant<int, std::string, TokenType>> if_expr;
 	
 
@@ -2042,6 +2096,5 @@ private:
 
 	bool if_stat = false;
 	bool temp_vars = false;
-	bool count_paren = false;
 	bool is_bin_expr = false;
 };

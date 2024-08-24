@@ -41,6 +41,10 @@ enum TokenType
 	 TRUE,
 	 open_braket,
 	 close_braket,
+	 string,
+	 open_string,
+	 close_string,
+	 string_val,
 };
 inline std::string to_string(const TokenType type)
 {
@@ -59,6 +63,8 @@ inline std::string to_string(const TokenType type)
 		return "integer";
 	case TokenType::variable:
 		return "variable";
+	case TokenType::close_string:
+		return "close_string";
 	case TokenType::eq:
 		return "`=`";
 	case TokenType::plus:
@@ -73,6 +79,10 @@ inline std::string to_string(const TokenType type)
 		return "character";
 	case TokenType::open_char:
 		return "character";
+	case TokenType::string:
+		return "string";
+	case TokenType::open_string:
+		return "string";
 	case TokenType::boolean:
 	    return "boo";
 	case TokenType::open_braket:
@@ -152,7 +162,11 @@ public:
 					tokens.push_back({ .type = TokenType::integer});
 					str.clear();
 				}
-
+				else if (str == "string")
+				{
+					tokens.push_back({ .type = TokenType::string });
+					str.clear();
+				}
 				else if (str == "else")
 				{
 					   str.clear();
@@ -318,6 +332,32 @@ public:
 				consume();
 				continue;
 			}
+			else if (peek().value()[0]  == '"')
+			{
+				tokens.push_back({ .type = TokenType::open_string });
+				consume();
+
+				str.push_back(consume());
+				while (peek().has_value() && isalpha(peek().value()[0]))
+				{
+					str.push_back(consume());
+				}
+
+				tokens.push_back({ .type = TokenType::string_val,.value = str });
+				str.clear();
+
+				if (peek().value()[0] == '"')
+				{
+					tokens.push_back({ .type = TokenType::close_string });
+					consume();
+				}
+				else
+				{
+					std::cerr << " Invalid expressiuon!!" << std::endl;
+					exit(EXIT_FAILURE);
+				}
+				continue;
+				}
 			else if (peek().value() == "'")
 			{
 				tokens.push_back({ .type = TokenType::open_char });

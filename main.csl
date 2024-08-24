@@ -2,22 +2,8 @@ int main()
 {
 
   int a = 1;
-   printf(a);
-   int b[4];
-   b[0] = (2 * ((2 + 1) + 2));
-   printf(b);
-
-
-  if((b + 1 + (2*2)> 1 | 2 > 1 & 2 > 1) > 1 > 2 & (2 > 1 & 2 > 1))
-  {
-   int c[4];
-   a = a + 2;
-   printf(a);
-  }
-
-    char symbol = ' ';
-    cin(symbol);
-    printf(symbol$n);
+   string name = "Kaisar";
+   printf(name$n);
 
     
   

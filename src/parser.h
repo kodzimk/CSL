@@ -11,48 +11,38 @@ struct NodeTermVar
 	std::string name;
 	std::string eqName;
 };
-
 struct NodeTermIntVal
 {
 	std::optional<std::string> value;
 };
-
 struct NodeWordCharVal {
 	std::optional<std::string> value;
 	std::string name;
 };
-
 struct NodeExpr;
-
 struct NodeTermParen {
 	NodeExpr* expr;
 	TokenType type;
 };
-
 struct NodeBinExprAdd {
 	NodeExpr* lhs;
 	NodeExpr* rhs;
 };
-
 struct NodeBinExprMulti {
 	NodeExpr* lhs;
 	NodeExpr* rhs;
 };
-
 struct NodeBinExprSub {
 	NodeExpr* lhs;
 	NodeExpr* rhs;
 };
-
 struct NodeBinExprDiv {
 	NodeExpr* lhs;
 	NodeExpr* rhs;
 };
-
 struct NodeBinExpr {
 	std::variant<NodeBinExprAdd*, NodeBinExprMulti*, NodeBinExprSub*, NodeBinExprDiv*> var;
 };
-
 struct NodeLogAnd
 {
 	NodeExpr* lhs;
@@ -61,36 +51,30 @@ struct NodeLogOr
 {
 	NodeExpr* lhs;
 };
-
-
 struct NodeLogExprGreater {
 	NodeExpr* lhs;
 	NodeExpr* rhs;
 	std::optional<NodeLogAnd*> varAnd;
 	std::optional<NodeLogOr*> varOr;
 };
-
 struct NodeLogExprLesser {
 	NodeExpr* lhs;
 	NodeExpr* rhs;
 	std::optional<NodeLogAnd*> varAnd;
 	std::optional<NodeLogOr*> varOr;
 };
-
 struct NodeLogExprEqual {
 	NodeExpr* lhs;
 	NodeExpr* rhs;
 	std::optional<NodeLogAnd*> varAnd;
 	std::optional<NodeLogOr*> varOr;
 };
-
 struct NodeLogExprNotEqual {
 	NodeExpr* lhs;
 	NodeExpr* rhs;
 	std::optional<NodeLogAnd*> varAnd;
 	std::optional<NodeLogOr*> varOr;
 };
-
 struct NodeLogExprGreaterEqual {
 	NodeExpr* lhs;
 	NodeExpr* rhs;
@@ -103,7 +87,6 @@ struct NodeLogExprLesserEqual {
 	std::optional<NodeLogAnd*> varAnd;
 	std::optional<NodeLogOr*> varOr;
 };
-
 struct NodeLogExprParen
 {
 	NodeExpr* lhs;
@@ -111,31 +94,24 @@ struct NodeLogExprParen
 	std::optional<NodeLogAnd*> varAnd;
 	std::optional<NodeLogOr*> varOr;
 };
-
-
 struct NodeLogExpr
 {
 	std::variant<NodeLogExprGreater*, NodeLogExprLesser*, NodeLogExprEqual*, NodeLogExprNotEqual*, NodeLogExprGreaterEqual*, NodeLogExprLesserEqual*, NodeLogAnd*, NodeLogOr*, NodeLogExprParen*> var;
 };
-
-
 struct NodeStatIncerement
 {
 	NodeExpr* expr;
 	std::string variableName;
 };
-
 struct NodeStatDecrement
 {
 	NodeExpr* expr;
 	std::string variableName;
 };
-
 struct NodeTermOpposet
 {
 	std::variant <NodeTermIntVal*, NodeTermVar*> var;
 };
-
 struct NodeTermArray
 {
 	std::string type;
@@ -144,33 +120,33 @@ struct NodeTermArray
 	std::string name;
     std::string size;
 };
-
-struct NodeTerm {
-	std::variant<NodeTermIntVal*, NodeTermVar*, NodeTermParen*, NodeWordCharVal*, NodeLogExpr*, NodeTermOpposet*,NodeTermArray*> var;
+struct NodeTermString
+{
+	std::optional<std::string> value;
+	std::string equalType;
+	std::string name;
 };
-
+struct NodeTerm {
+	std::variant<NodeTermIntVal*, NodeTermVar*, NodeTermParen*, NodeWordCharVal*, NodeLogExpr*, NodeTermOpposet*,NodeTermArray*,NodeTermString*> var;
+};
 struct NodeExpr {
 	std::variant<NodeTerm*, NodeBinExpr*, NodeLogExpr*> var;
 };
-
 struct NodeStmtExit {
 	NodeExpr* expr;
 };
-
 struct NodeStatVar
 {
 	NodeExpr* expr;
 	std::string name;
 	std::string type;
 };
-
 struct NodeStateEq
 {
 	NodeExpr* expr;
 	std::string variableName;
 	std::string type;
 };
-
 struct NodeStatPrint
 {
 	std::optional<std::string> variableName;
@@ -178,51 +154,40 @@ struct NodeStatPrint
 	std::string type;
 	bool newLine;
 };
-
 struct NodeStatInput
 {
 	std::string name;
 	NodeExpr* expr;
 };
-
 struct NodeStat;
-
 struct NodeScope {
 	std::vector<NodeStat*> stmts;
 };
-
 struct NodeIfPred;
-
 struct NodeIfPredElif {
 	NodeExpr* expr{};
 	NodeScope* scope{};
 	std::optional<NodeIfPred*> pred;
 };
-
 struct NodeIfPredElse {
 	NodeScope* scope;
 };
-
 struct NodeIfPred {
 	std::variant<NodeIfPredElif*, NodeIfPredElse*> var;
 };
-
 struct NodeStatIf {
 	NodeExpr* expr{};
 	NodeScope* scope{};
 	std::optional<NodeIfPred*> pred;
 };
-
 struct NodeStatExit
 {
 	NodeExpr* expr;
 };
-
 struct NodeStat
 {
 	std::variant<NodeStatExit*, NodeStatVar*, NodeStateEq*, NodeStatPrint*, NodeScope*, NodeStatIf*, NodeStatIncerement*, NodeStatDecrement*, NodeStatInput*> stat;
 };
-
 struct NodeProg
 {
 	std::vector<NodeStat*> stats;
@@ -363,7 +328,17 @@ public:
 
 			return word;
 		}
+		else if (auto int_lit = try_consume(TokenType::open_string))
+		{
+			NodeTermString* str = m_allocator.emplace<NodeTermString>();
+			str->value = consume().value.value();
+			str->equalType = TokenType::string_val;
+			try_consume_err(TokenType::close_string);
+			NodeTerm* word = m_allocator.emplace<NodeTerm>();
+			word->var = str;
 
+			return word;
+			}
 		return {};
 	}
 	std::optional<NodeExpr*> parse_expr(const int min_prec = 0)
@@ -865,6 +840,44 @@ public:
 			bin_expr = false;
 
 			m_vars[stat_var->name] = "integer";
+			stat->stat = stat_var;
+			return stat;
+		}
+		else if (peek().has_value() && (peek().value().type == TokenType::string && peek(1).has_value() && peek(1).value().type == TokenType::variable &&
+			peek(2).has_value() && peek(2).value().type == TokenType::eq))
+		{
+			consume();
+			NodeStat* stat = m_allocator.emplace<NodeStat>();
+			NodeStatVar* stat_var = m_allocator.emplace<NodeStatVar>();
+			stat_var->type = "string";
+			std::string type = to_string(peek(2).value().type);
+
+			if (type == "character" || type == "integer" ||  (type == "variable" && m_vars.contains(peek(2).value().value.value()) && m_vars.at(peek(2).value().value.value()) != "integer")
+				|| (type == "variable" && m_vars.contains(peek(2).value().value.value()) && m_vars.at(peek(2).value().value.value()) != "character"))
+			{
+				std::cerr << "Invalid value!!" << std::endl;
+				exit(EXIT_FAILURE);
+			}
+
+			stat_var->name = consume().value.value();
+			consume();
+			stat_var->expr = parse_expr().value();
+			if (auto expr_var = std::get_if<NodeTerm*>(&stat_var->expr->var))
+			{
+				if (auto str = std::get_if<NodeTermString*>(&((*expr_var)->var)))
+				{
+					(*str)->name = stat_var->name;
+				}
+			}
+			if (m_visit_count != 0)
+			{
+				m_visit_counts.push_back(m_visit_count);
+			}
+			m_visit_count = 0;
+			consume();
+			bin_expr = false;
+
+			m_vars[stat_var->name] = "string";
 			stat->stat = stat_var;
 			return stat;
 		}
