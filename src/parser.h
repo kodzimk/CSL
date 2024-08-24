@@ -930,6 +930,7 @@ public:
 			peek(3).has_value() && peek(3).value().type == TokenType::int_val)
 		{
 			NodeStat* stat = m_allocator.emplace<NodeStat>();
+			is_string = false;
 			NodeStatVar* stat_var = m_allocator.emplace<NodeStatVar>();
 			stat_var->type = to_string(consume().type);
 			stat_var->name = consume().value.value();

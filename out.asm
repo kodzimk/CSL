@@ -12,6 +12,10 @@ temp dq  '',0xA,0xD
 section .text
 global _start
 _start:
+    mov rax,'Kaisar'
+   push rax
+    mov rax,'Kaisar2'
+   push rax
    mov rax,'s'
    push rax
    mov rax,'s'
@@ -20,7 +24,7 @@ _start:
    push rax
    mov rax,'B'
    push rax
-   mov rax,315
+   mov rax,317
    push rax
    mov rax,317
    push rax
@@ -91,18 +95,66 @@ mov rax,rsi
     cmp rax,0
     je label0
  
+   mov rax,5
+   push rax
+   mov rax,'l'
+   push rax
+   mov rax,0
+   push rax
+   mov rax,0
+   push rax
+   mov rax,0
+   push rax
+   mov rax,0
+   push rax
+   mov rax,0
+   push rax
+    mov rax,'sasa'
+   push rax
+   mov rax,1
+   push rax
+   mov rax,0
+   push rax
+    pop rbx
+    pop rax
+    mov rsi, 1
+    cmp rbx, rax
+    jc carry_set5
+    
+    mov rsi, 0
+carry_set5:
+    
+mov rax,rsi
+   push rax
+    pop rax
+    cmp rax,0
+    je label1
+ 
+   mov rax,5
+   push rax
+   push QWORD [rsp + 0]
+
+    pop rax
+    call _printnumberRAX
+    pop rax
+label1:
+  
+    pop rax
+    pop rax
+    pop rax
+    pop rax
+    pop rax
+    pop rax
+    pop rax
+    pop rax
 label0:
   
-    mov [temp + 0], byte 'n'
-    mov [temp + 1], byte 'i'
-    mov [temp + 2], byte 'g'
-    mov [temp + 3], byte 'a'
-    mov rax,1
-    mov rsi,temp
-    mov rdi,1
-    mov rdx,4
-    syscall
-    
+   mov rax,5
+   push rax
+   push QWORD [rsp + 0]
+
+    pop rax
+    call _printnumberRAX
    mov rax,1
    push rax
     pop rdi

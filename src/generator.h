@@ -810,7 +810,7 @@ public:
 					gen.m_arr_vars[array->name].type = array->type;
 					if (gen.temp_vars)
 					{
-						gen.m_arr_name.push_back(array->name);
+						gen.m_temp_vars.push_back(array->name);
 					}
 				}
 				else if(array->expr != nullptr)
@@ -828,7 +828,7 @@ public:
 						else if (gen.if_expr.size() > 0)
 						{
 							gen.parse_log_expr();
-							gen.m_arr_vars.at(array->name).values[size] = gen.m_values[0];
+							gen.m_arr_vars.at(array->name).values[size] = gen.parse_log_expr();
 							gen.m_bin_expr.clear();
 						}
 						else if (gen.value.has_value())
@@ -877,8 +877,15 @@ public:
 					}
 					gen.m_string_vars[str->name].size = gen.value.value().size();
 					gen.m_string_vars[str->name].values = values;
+					std::string text;
+					for (int i = 0; i < gen.m_string_vars.at(str->name).size; i++)
+					{
+						text += gen.m_string_vars.at(str->name).values[i];
+					}
+					gen.m_output << "    mov rax,'" << text << "'" << std::endl;
+					gen.push("rax");
 					if (gen.temp_vars)
-						gen.m_string_name.push_back(str->name);
+						gen.m_temp_vars.push_back(str->name);
 				}
 				else if (gen.m_string_vars.contains(str->name) && str->expr != nullptr && size == -1)
 				{
@@ -1154,11 +1161,12 @@ public:
 	}
 	void gen_scope(const NodeScope* scope)
 	{
-		begin_scope();
+		static std::vector<size_t> m_last_index_of_scope;
+		begin_scope(m_last_index_of_scope);
 		for (NodeStat* stmt : scope->stmts) {
 			gen_stat(stmt);
 		}
-		end_scope();
+		end_scope(m_last_index_of_scope);
 	}
 	void gen_if_pred(const NodeIfPred* pred, const std::string& end_label)
 	{
@@ -1179,16 +1187,14 @@ public:
 				gen.m_output << "    je " << label << "\n";
 
 				gen.m_output << " \n";
-				gen.parse_log_expr();
-				if (gen.m_values[0] == 1)
+				gen.m_bin_expr.clear();
+				if (gen.parse_log_expr() == 1)
 				{
-					gen.m_values.clear();
 					gen.m_output << label << ":\n";
 					gen.gen_scope(elif->scope);
 					gen.m_bin_expr.clear();
 				}
 				else if (elif->pred.has_value()) {
-					gen.m_values.clear();
 					const std::string end_label = gen.create_label();
 					gen.m_output << "    jmp " << end_label << "\n";
 					gen.m_output << label << ":\n";
@@ -1199,7 +1205,6 @@ public:
 				else {
 					gen.m_output << label << ":\n";
 				}
-				gen.m_values.clear();
 				gen.m_output << "  \n";
 				gen.m_bin_expr.clear();
 			}
@@ -1392,7 +1397,7 @@ public:
 						gen.m_int_vars[stat_var->name] = gen.m_stack_size - 1;
 						if (gen.temp_vars)
 						{
-							gen.m_int_name.push_back(stat_var->name);
+							gen.m_temp_vars.push_back(stat_var->name);
 						}
 					}
 					else if (stat_var->type == "character" && stat_var->type != "string" &&!gen.m_arr_vars.contains(stat_var->name))
@@ -1402,7 +1407,7 @@ public:
 						gen.m_char_vars[stat_var->name] = gen.m_stack_size - 1;
 						if (gen.temp_vars)
 						{
-							gen.m_char_name.push_back(stat_var->name);
+							gen.m_temp_vars.push_back(stat_var->name);
 						}
 					}
 
@@ -1477,16 +1482,13 @@ public:
 				gen.m_output << "    je " << label << "\n";
 				gen.m_output << " \n";
 
-				gen.parse_log_expr();
 				gen.m_bin_expr.clear();
-				if (gen.m_values[0] == 1)
+				if (gen.parse_log_expr() == 1)
 				{
-					gen.m_values.clear();
 					gen.gen_scope(stmt_if->scope);
 					gen.m_output << label << ":\n";
 				}
 				else if (stmt_if->pred.has_value()) {
-					gen.m_values.clear();
 					const std::string end_label = gen.create_label();
 					gen.m_output << "    jmp " << end_label << "\n";
 					gen.m_output << label << ":\n";
@@ -1498,7 +1500,6 @@ public:
 					gen.m_output << label << ":\n";
 				}
 				gen.m_output << "  \n";
-				gen.m_values.clear();
 				gen.m_bin_expr.clear();
 			}
 			void operator()(const NodeStatIncerement* inc)
@@ -1762,43 +1763,43 @@ private:
 		m_output << "    pop " << reg << '\n';
 		m_stack_size--;
 	}
-	void begin_scope()
+	void begin_scope(std::vector<size_t>& m_last_index_of_scope)
 	{
 		m_last_index_of_scope.push_back(m_stack_size);
 		temp_vars = true;
 	}
-	void end_scope()
+	void end_scope(std::vector<size_t>& m_last_index_of_scope)
 	{
-		for (int i = m_last_index_of_scope[m_last_index_of_scope.size() - 1]; i < m_stack_size + 1; i++)
+		for (int i = m_last_index_of_scope[m_last_index_of_scope.size() - 1]; i < m_stack_size;)
 		{
-			if (m_int_name.size() > 0)
+			if (m_int_vars.contains(m_temp_vars[m_temp_vars.size() - 1]))
 			{
-				m_int_vars.erase(m_int_name[m_int_name.size() - 1]);
-				m_int_name.erase(m_int_name.end() - 1);
+				m_int_vars.erase(m_temp_vars[m_temp_vars.size() - 1]);
+				pop("rax");
+
+			}
+			else if(m_char_vars.contains(m_temp_vars[m_temp_vars.size() - 1]))
+			{
+				m_char_vars.erase(m_temp_vars[m_temp_vars.size() - 1]);
+				m_char_values.erase(m_temp_vars[m_temp_vars.size() - 1]);
 				pop("rax");
 			}
-			else if (m_char_name.size() > 0)
+			else if (m_arr_vars.contains(m_temp_vars[m_temp_vars.size() - 1]))
 			{
-				m_char_vars.erase(m_char_name[m_char_name.size() - 1]);
-				m_char_values.erase(m_char_name[m_char_name.size() - 1]);
-				m_char_name.erase(m_char_name.end() - 1);
-				pop("rax");
-			}
-			else if (m_arr_name.size() > 0)
-			{
-				for (int i = m_arr_vars.at(m_arr_name[m_arr_name.size() - 1]).size - 1; i >= 0; i--)
+				for (int i = m_arr_vars.at(m_temp_vars[m_temp_vars.size() - 1]).size - 1; i >= 0; i--)
 				{
 					pop("rax");
 				}
-				m_arr_vars.erase(m_arr_name[m_arr_name.size() - 1]);
-				m_arr_name.erase(m_arr_name.end() - 1);
+				m_arr_vars.erase(m_temp_vars[m_temp_vars.size() - 1]);
 			}
+			else if (m_string_vars.contains(m_temp_vars[m_temp_vars.size() - 1]))
+			{
+				m_string_vars.erase(m_temp_vars[m_temp_vars.size() - 1]);
+				pop("rax");
+			}
+			m_temp_vars.erase(m_temp_vars.end() - 1);
 		}
-		for (int i = 0; i < m_string_name.size(); i++)
-		{
-			m_string_vars.erase(m_string_name[m_string_name.size() - 1]);
-			m_string_name.erase(m_string_name.end() - 1);
-		}
+
 
 		m_last_index_of_scope.erase(m_last_index_of_scope.end() - 1);
 		temp_vars = false;
@@ -1832,8 +1833,9 @@ private:
 		}
 		orCount = 0;
 	}
-	void parse_log_expr()
+	int parse_log_expr()
 	{
+		std::vector<int> m_values;
 		if (if_expr.size() > 1)
 		{
 			bool is_paren = false;
@@ -2235,6 +2237,7 @@ private:
 
 		}
 		if_expr.clear();
+		return m_values[0];
 	}
 	void parse_bin_expr()
 	{
@@ -2258,7 +2261,6 @@ private:
 		m_cur_var.reset();
 		m_bin_expr.clear();
 	}
-
 private:
 	NodeProg prog;
 	struct Arr_Var
@@ -2280,15 +2282,8 @@ private:
 	std::stringstream m_data;
 	std::stringstream m_output;
 
-	std::vector<int> m_values;
 	std::vector<int> m_visit_counts;
-	std::vector<std::string> m_int_name;
-	std::vector<std::string> m_arr_name;
-	std::vector<std::string> m_char_name;
-	std::vector<std::string> m_string_name;
-	std::vector<size_t> m_last_index_of_scope;
-	std::unordered_map<std::string, Arr_Var> m_arr_vars;
-	std::unordered_map<std::string, STR_Var> m_string_vars;
+	std::vector<std::string> m_temp_vars;
 	std::vector<std::variant<int, std::string, TokenType>> if_expr;
 	
 
@@ -2296,7 +2291,9 @@ private:
 	std::unordered_map<std::string, size_t> m_int_vars;
 	std::unordered_map<std::string, size_t> m_char_vars;
 	std::unordered_map<std::string, char> m_char_values;
+	std::unordered_map<std::string, Arr_Var> m_arr_vars;
 	std::unordered_map<std::string, std::string> m_types;
+	std::unordered_map<std::string, STR_Var> m_string_vars;
 
 	std::optional<std::string> value;
 	std::optional<std::string> m_cur_var;

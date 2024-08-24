@@ -7,12 +7,21 @@ int main()
    b = 'B';
    s = 'B';
 
-    if(name == "Kaisar2" | 's' == 'd' & 'd' < 'a')
+    if(nameA == "Kaisar2" | 's' == 'd' & 'd' < 'a')
     {
+    int a = 5;
+    char k = 'l';
+    int j[5];
       string as = "sasa";
+      if(1 > 0)
+      {
+        int l = 5;
+      printf(l);
+      }
     }
 
-    printf("niga");
+ int k = 5;
+     printf(k);
   
   return 1;
 }
