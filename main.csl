@@ -2,9 +2,11 @@ int main()
 {
 
   int a = 1;
-   string name = "Kaisar";
+   string name = "KaisarNigerAlkash";
    printf(name$n);
-
+   name[0] = 's';
+     name[3] = 'A';
+   printf(name$n);
     
   
   return 1;
