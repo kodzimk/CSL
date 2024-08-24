@@ -362,6 +362,7 @@ public:
 		}
 		else if (auto int_lit = try_consume(TokenType::open_string))
 		{
+			is_string = true;
 			NodeTermString* str = m_allocator.emplace<NodeTermString>();
 			str->expr = parse_expr().value();
 			str->equalType = TokenType::string_val;

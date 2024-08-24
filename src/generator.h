@@ -567,7 +567,7 @@ public:
 			}
 			void operator()(const NodeTermStringVal* string_val)
 			{
-				if (gen.if_stat)
+				if (gen.if_stat && !gen.is_bin_expr)
 				{
 					int value = stoi(string_val->value);
 					gen.if_expr.push_back(value);
@@ -674,10 +674,21 @@ public:
 				}
 				else if (gen.m_char_vars.contains(term_var->name))
 				{
-					const auto& var = gen.m_char_vars.at(term_var->name);
-					std::stringstream offset;
-					offset << "QWORD [rsp + " << (gen.m_stack_size - var - 1) * 8 << "]\n";
-					gen.push(offset.str());
+					if (gen.if_stat && !gen.is_bin_expr)
+					{
+						int value = int(gen.m_char_values.at(gen.m_cur_var.value())) - 48;
+						gen.if_expr.push_back(value);
+						gen.m_output << "   mov rax," << value << '\n';
+						gen.push("rax");
+					}
+					else
+					{
+						gen.value.value()[0] = gen.m_char_values.at(gen.m_cur_var.value());
+					    const auto& var = gen.m_char_vars.at(term_var->name);
+					    std::stringstream offset;
+					    offset << "QWORD [rsp + " << (gen.m_stack_size - var - 1) * 8 << "]\n";
+					    gen.push(offset.str());
+					}
 					if (gen.m_cur_var.has_value() && gen.m_arr_vars.contains(gen.m_cur_var.value()) && gen.m_arr_vars.at(gen.m_cur_var.value()).type == "character")
 					{
 						gen.m_arr_vars.at(gen.m_cur_var.value()).arr[gen.m_arr_vars.at(gen.m_cur_var.value()).current_size] = gen.m_stack_size-1;
@@ -691,7 +702,7 @@ public:
 					{
 						text += gen.m_string_vars.at(term_var->name).values[i];
 					}
-					if (gen.if_stat)
+					if (gen.if_stat && !gen.is_bin_expr)
 					{
 						int value = 0;
 						for (int i = 0; i < text.size(); i++)
@@ -856,7 +867,6 @@ public:
 				{
 					size = stoi(str->size.value());
 				}
-
 				if (str->name.size() > 0 && !gen.m_string_vars.contains(str->name))
 				{
 					std::vector<char> values;
@@ -900,13 +910,54 @@ public:
 				}
 				else if (str->expr == nullptr)
 				{
+					if (size >= gen.m_string_vars.at(str->name).values.size() || size < -1)
+					{
+						std::cerr << "Out of range!" << std::endl;
+						exit(EXIT_FAILURE);
+					}
 					std::string text;
 					for (int i = 0; i < gen.m_string_vars.at(str->name).size; i++)
 					{
 							text += gen.m_string_vars.at(str->name).values[i];
 					}
-					gen.m_output << "mov rax,'" << text << "'" << std::endl;
-					gen.value = text;
+					if (gen.if_stat && !gen.is_bin_expr)
+					{
+						gen.value = std::to_string(int(text[size]) - 48);
+						gen.m_output << "   mov rax," << gen.value.value()<< '\n';
+						gen.push("rax");
+					}
+					else
+					{
+						gen.m_output << "mov rax,'" << text << "'" << std::endl;
+						gen.value = text;
+					}
+				}
+				else if (str->expr != nullptr && size == -1 && !gen.m_string_vars.contains(str->name))
+				{
+					std::string text;
+					if (auto s = std::get_if<NodeTerm*>(&str->expr->var))
+					{
+						if (auto text1 = std::get_if<NodeTermStringVal*>(&((*s)->var)))
+						{
+							text = (*text1)->value;
+						}
+					}
+
+					if (gen.if_stat && !gen.is_bin_expr)
+					{
+						int value = 0;
+						for (int i = 0; i < text.size(); i++)
+						{
+							value += int(text[i]) - 48;
+						}
+						gen.if_expr.push_back(value);
+						gen.m_output << "   mov rax," << value << "" << '\n';
+						gen.push("rax");
+					}
+					else
+					{
+						gen.value = text;
+					}
 				}
 				else
 				{
@@ -1329,6 +1380,8 @@ public:
 					}
 					else if (stat_var->type == "character" && stat_var->type != "string" &&!gen.m_arr_vars.contains(stat_var->name))
 					{
+						gen.m_char_values[stat_var->name] = gen.value.value()[0];
+						gen.value.reset();
 						gen.m_char_vars[stat_var->name] = gen.m_stack_size - 1;
 						if (gen.temp_vars)
 						{
@@ -1369,6 +1422,8 @@ public:
 					}
 					else if (gen.m_char_vars.contains(stat_eq->variableName))
 					{
+						gen.m_char_values.at(stat_eq->variableName) = gen.value.value()[0];
+						gen.value.reset();
 						gen.m_char_vars.at(stat_eq->variableName) = gen.m_stack_size - 1;
 					}
 					else if (gen.m_arr_vars.contains(stat_eq->variableName) && !gen.m_bin_expr.empty())
@@ -1707,6 +1762,7 @@ private:
 			else if (m_char_name.size() > 0)
 			{
 				m_char_vars.erase(m_char_name[m_char_name.size() - 1]);
+				m_char_values.erase(m_char_name[m_char_name.size() - 1]);
 				m_char_name.erase(m_char_name.end() - 1);
 			}
 			else if (m_arr_name.size() > 0)
@@ -2214,6 +2270,7 @@ private:
 	std::unordered_map<std::string, int> m_int_values;
 	std::unordered_map<std::string, size_t> m_int_vars;
 	std::unordered_map<std::string, size_t> m_char_vars;
+	std::unordered_map<std::string, char> m_char_values;
 	std::unordered_map<std::string, std::string> m_types;
 
 	std::optional<std::string> value;

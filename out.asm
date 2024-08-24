@@ -12,18 +12,78 @@ temp dq  '',0xA,0xD
 section .text
 global _start
 _start:
+   mov rax,'s'
+   push rax
+   mov rax,'s'
+   push rax
+   mov rax,'B'
+   push rax
+   mov rax,'B'
+   push rax
    mov rax,315
    push rax
-   mov rax,316
+   mov rax,317
    push rax
     pop rbx
     pop rax
     mov rsi, 1
     cmp rax, rbx
-    jne carry_set0
+    je carry_set0
     
     mov rsi, 0
 carry_set0:
+    
+mov rax,rsi
+   push rax
+   mov rax,67
+   push rax
+   mov rax,52
+   push rax
+    pop rbx
+    pop rax
+    mov rsi, 1
+    cmp rax, rbx
+    je carry_set1
+    
+    mov rsi, 0
+carry_set1:
+    
+mov rax,rsi
+   push rax
+   mov rax,52
+   push rax
+   mov rax,49
+   push rax
+    pop rbx
+    pop rax
+    mov rsi, 1
+    cmp rbx, rax
+    jc carry_set2
+    
+    mov rsi, 0
+carry_set2:
+    
+mov rax,rsi
+   push rax
+    pop rax
+    pop rbx
+    mov rsi, 1
+    or rax, rbx
+    jne carry_set3
+    
+    mov rsi, 0
+    carry_set3:
+    
+mov rax,rsi
+   push rax
+    pop rax
+    pop rbx
+    mov rsi, 1
+    or rax, rbx
+    jne carry_set4
+    
+    mov rsi, 0
+    carry_set4:
     
 mov rax,rsi
    push rax
