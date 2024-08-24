@@ -366,7 +366,6 @@ public:
 			NodeTermString* str = m_allocator.emplace<NodeTermString>();
 			str->expr = parse_expr().value();
 			str->equalType = TokenType::string_val;
-			try_consume_err(TokenType::close_string);
 			NodeTerm* word = m_allocator.emplace<NodeTerm>();
 			word->var = str;
 
@@ -377,6 +376,7 @@ public:
 			NodeTermStringVal* str = m_allocator.emplace<NodeTermStringVal>();
 			str->value = consume().value.value();
 			NodeTerm* word = m_allocator.emplace<NodeTerm>();
+			try_consume_err(TokenType::close_string);
 			word->var = str;
 			return word;
 		}
@@ -1077,17 +1077,20 @@ public:
 			return stat;
 		}
 		else if (peek().has_value() && peek().value().type == TokenType::print && peek(1).has_value() && peek(1).value().type == TokenType::open_paren &&
-			peek(2).has_value() && (peek(2).value().type == TokenType::variable || peek(2).value().type == TokenType::int_val || peek(2).value().type == TokenType::open_char))
+			peek(2).has_value() && (peek(2).value().type == TokenType::variable || peek(2).value().type == TokenType::int_val || peek(2).value().type == TokenType::open_char || peek(2).value().type == TokenType::open_string))
 		{
 			consume();
 			consume();
 			NodeStat* stat = m_allocator.emplace<NodeStat>();
 			NodeStatPrint* stat_print = m_allocator.emplace<NodeStatPrint>();
 			stat_print->type = to_string(peek().value().type);
+			if (stat_print->type == "string")
+				is_string = true;
 			if (peek().value().value.has_value())
 				stat_print->variableName = peek().value().value.value();
 
 			stat_print->expr = parse_expr().value();
+			is_string = false;
 			if (auto term = std::get_if<NodeTerm*>(&stat_print->expr->var))
 			{
 				if (auto arr = std::get_if<NodeTermArray*>(&((*term)->var)))

@@ -877,6 +877,8 @@ public:
 					}
 					gen.m_string_vars[str->name].size = gen.value.value().size();
 					gen.m_string_vars[str->name].values = values;
+					if (gen.temp_vars)
+						gen.m_string_name.push_back(str->name);
 				}
 				else if (gen.m_string_vars.contains(str->name) && str->expr != nullptr && size == -1)
 				{
@@ -1246,7 +1248,7 @@ public:
 			}
 			void operator()(const NodeStatPrint* stat_print)
 			{
-                if (stat_print->type == "character" || gen.m_char_vars.contains(stat_print->variableName.value()))
+                if (stat_print->type == "character" || (stat_print->variableName.has_value() && gen.m_char_vars.contains(stat_print->variableName.value())))
 				{
 					gen.gen_expr(stat_print->expr);
 					gen.pop("rax");
@@ -1259,14 +1261,14 @@ public:
 					gen.m_output << "    syscall\n";
 					gen.m_output << "    \n";
 				}
-				else if (stat_print->type == "integer"  || gen.m_int_vars.contains(stat_print->variableName.value()))
+				else if (stat_print->type == "integer"  || (stat_print->variableName.has_value() && gen.m_int_vars.contains(stat_print->variableName.value())))
 				{
 					gen.gen_expr(stat_print->expr);
 					gen.is_bin_expr = false;
 					gen.pop("rax");
 					gen.m_output << "    call _printnumberRAX\n";
 				}
-				else if (stat_print->type == "boolean" && gen.m_int_vars.contains(stat_print->variableName.value()))
+				else if (stat_print->type == "boolean" && (stat_print->variableName.has_value() && gen.m_int_vars.contains(stat_print->variableName.value())))
 				{
 					if (gen.m_int_values.at(stat_print->variableName.value()) == 0)
 					{
@@ -1337,6 +1339,21 @@ public:
 						gen.m_output << "    syscall\n";
 						gen.m_output << "    \n";
 					}
+				}
+				else if (stat_print->type == "string")
+				{
+					gen.gen_expr(stat_print->expr);
+
+					for (int i = 0; i < gen.value.value().size(); i++)
+					{
+						gen.m_output << "    mov [temp + " << i << "], " << "byte '" << gen.value.value()[i] << "'" << "\n";
+					}
+					gen.m_output << "    mov rax,1" << "\n";
+					gen.m_output << "    mov rsi,temp" << "\n";
+					gen.m_output << "    mov rdi,1" << "\n";
+					gen.m_output << "    mov rdx," << gen.value.value().size() << "\n";
+					gen.m_output << "    syscall\n";
+					gen.m_output << "    \n";
 				}
 				else
 				{
@@ -1758,12 +1775,14 @@ private:
 			{
 				m_int_vars.erase(m_int_name[m_int_name.size() - 1]);
 				m_int_name.erase(m_int_name.end() - 1);
+				pop("rax");
 			}
 			else if (m_char_name.size() > 0)
 			{
 				m_char_vars.erase(m_char_name[m_char_name.size() - 1]);
 				m_char_values.erase(m_char_name[m_char_name.size() - 1]);
 				m_char_name.erase(m_char_name.end() - 1);
+				pop("rax");
 			}
 			else if (m_arr_name.size() > 0)
 			{
@@ -1774,8 +1793,13 @@ private:
 				m_arr_vars.erase(m_arr_name[m_arr_name.size() - 1]);
 				m_arr_name.erase(m_arr_name.end() - 1);
 			}
-			pop("rax");
 		}
+		for (int i = 0; i < m_string_name.size(); i++)
+		{
+			m_string_vars.erase(m_string_name[m_string_name.size() - 1]);
+			m_string_name.erase(m_string_name.end() - 1);
+		}
+
 		m_last_index_of_scope.erase(m_last_index_of_scope.end() - 1);
 		temp_vars = false;
 	}
@@ -2261,6 +2285,7 @@ private:
 	std::vector<std::string> m_int_name;
 	std::vector<std::string> m_arr_name;
 	std::vector<std::string> m_char_name;
+	std::vector<std::string> m_string_name;
 	std::vector<size_t> m_last_index_of_scope;
 	std::unordered_map<std::string, Arr_Var> m_arr_vars;
 	std::unordered_map<std::string, STR_Var> m_string_vars;

@@ -1,16 +1,18 @@
 int main()
 {
    string name = "Kaisar";
-   string nameA = "Kaisar1";
+   string nameA = "Kaisar2";
    char s = 's';
    char b = 's';
    b = 'B';
    s = 'B';
 
-    if("Kaisar" == "Kaisar2" | 's' == 'd' | 'd' > 'a')
+    if(name == "Kaisar2" | 's' == 'd' & 'd' < 'a')
     {
-      printf(name);
+      string as = "sasa";
     }
+
+    printf("niga");
   
   return 1;
 }

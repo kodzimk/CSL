@@ -57,7 +57,7 @@ mov rax,rsi
     pop rbx
     pop rax
     mov rsi, 1
-    cmp rbx, rax
+    cmp rax, rbx
     jc carry_set2
     
     mov rsi, 0
@@ -68,11 +68,11 @@ mov rax,rsi
     pop rax
     pop rbx
     mov rsi, 1
-    or rax, rbx
+    and rbx, rax
     jne carry_set3
     
     mov rsi, 0
-    carry_set3:
+carry_set3:
     
 mov rax,rsi
    push rax
@@ -91,21 +91,18 @@ mov rax,rsi
     cmp rax,0
     je label0
  
-    mov [temp + 0], byte 'K'
-    mov [temp + 1], byte 'a'
-    mov [temp + 2], byte 'i'
-    mov [temp + 3], byte 's'
-    mov [temp + 4], byte 'a'
-    mov [temp + 5], byte 'r'
+label0:
+  
+    mov [temp + 0], byte 'n'
+    mov [temp + 1], byte 'i'
+    mov [temp + 2], byte 'g'
+    mov [temp + 3], byte 'a'
     mov rax,1
     mov rsi,temp
     mov rdi,1
-    mov rdx,6
+    mov rdx,4
     syscall
     
-    pop rax
-label0:
-  
    mov rax,1
    push rax
     pop rdi
