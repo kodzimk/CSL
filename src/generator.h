@@ -814,7 +814,7 @@ public:
 			void operator()(NodeTermString* str)
 			{
 				int size = -1;
-				if (gen.m_int_vars.contains(str->name))
+				if (str->size.has_value()&&gen.m_int_vars.contains(str->size.value()))
 				{
 					size = gen.m_int_values.at(str->size.value());
 				}
@@ -1135,6 +1135,29 @@ public:
 				gen.is_bin_expr = false;
 				gen.pop("rdi");
 				gen.m_output << "    jmp exit\n";
+			}
+			void operator()(const NodeStatRemoveString* remove_string)
+			{
+				if (gen.m_string_vars.contains(remove_string->name) )
+				{
+					int size = -1;
+					if (gen.m_int_vars.contains(remove_string->pos))
+					{
+						size = gen.m_int_values.at(remove_string->pos);
+					}
+					else
+					{
+						size = stoi(remove_string->pos);
+					}
+					if (size < 0 || size > gen.m_string_vars.at(remove_string->name).size)
+					{
+						std::cerr << "Out of range!" << std::endl;
+						exit(EXIT_FAILURE);
+					}
+
+					gen.m_string_vars.at(remove_string->name).values.erase(gen.m_string_vars.at(remove_string->name).values.begin() + size);
+					gen.m_string_vars.at(remove_string->name).size--;
+				}
 			}
 			void operator()(const NodeStatPrint* stat_print)
 			{

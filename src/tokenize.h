@@ -45,6 +45,7 @@ enum TokenType
 	 open_string,
 	 close_string,
 	 string_val,
+	 REMOVE_STRING,
 };
 inline std::string to_string(const TokenType type)
 {
@@ -157,6 +158,11 @@ public:
 					tokens.push_back({ .type = TokenType::ret });
 					str.clear();
 				}
+				if (str == "remove")
+				{
+					tokens.push_back({ .type = TokenType::REMOVE_STRING });
+					str.clear();
+				}
 				else if (str == "int")
 				{
 					tokens.push_back({ .type = TokenType::integer});
@@ -228,7 +234,7 @@ public:
 					tokens.push_back({ .type = TokenType::boolean });
 					str.clear();
 				}
-				else
+				else if(!str.empty())
 				{
 						tokens.push_back({ .type = TokenType::variable, .value = str });
 					    str.clear();
@@ -455,6 +461,7 @@ public:
 			tokens.erase(tokens.begin(),tokens.begin() + 5);
 			tokens.erase(tokens.end() - 1);
 		}
+
 
 		return tokens;
 	}

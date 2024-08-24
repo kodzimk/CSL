@@ -47,27 +47,26 @@ _start:
    push rax
    mov rax,'A'
    push rax
-    mov [temp + 0], byte 's'
-    mov [temp + 1], byte 'a'
-    mov [temp + 2], byte 'i'
-    mov [temp + 3], byte 'A'
-    mov [temp + 4], byte 'a'
-    mov [temp + 5], byte 'r'
-    mov [temp + 6], byte 'N'
-    mov [temp + 7], byte 'i'
-    mov [temp + 8], byte 'g'
-    mov [temp + 9], byte 'e'
-    mov [temp + 10], byte 'r'
-    mov [temp + 11], byte 'A'
-    mov [temp + 12], byte 'l'
-    mov [temp + 13], byte 'k'
-    mov [temp + 14], byte 'a'
-    mov [temp + 15], byte 's'
-    mov [temp + 16], byte 'h'
+    mov [temp + 0], byte 'a'
+    mov [temp + 1], byte 'i'
+    mov [temp + 2], byte 'A'
+    mov [temp + 3], byte 'a'
+    mov [temp + 4], byte 'r'
+    mov [temp + 5], byte 'N'
+    mov [temp + 6], byte 'i'
+    mov [temp + 7], byte 'g'
+    mov [temp + 8], byte 'e'
+    mov [temp + 9], byte 'r'
+    mov [temp + 10], byte 'A'
+    mov [temp + 11], byte 'l'
+    mov [temp + 12], byte 'k'
+    mov [temp + 13], byte 'a'
+    mov [temp + 14], byte 's'
+    mov [temp + 15], byte 'h'
     mov rax,1
     mov rsi,temp
     mov rdi,1
-    mov rdx,17
+    mov rdx,16
     syscall
     
     mov edx,newLineLen

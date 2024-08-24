@@ -164,6 +164,11 @@ struct NodeStatInput
 	std::string name;
 	NodeExpr* expr;
 };
+struct NodeStatRemoveString
+{
+	std::string name;
+	std::string pos;
+};
 struct NodeStat;
 struct NodeScope {
 	std::vector<NodeStat*> stmts;
@@ -191,7 +196,7 @@ struct NodeStatExit
 };
 struct NodeStat
 {
-	std::variant<NodeStatExit*, NodeStatVar*, NodeStateEq*, NodeStatPrint*, NodeScope*, NodeStatIf*, NodeStatIncerement*, NodeStatDecrement*, NodeStatInput*> stat;
+	std::variant<NodeStatExit*, NodeStatVar*, NodeStateEq*, NodeStatPrint*, NodeScope*, NodeStatIf*, NodeStatIncerement*, NodeStatDecrement*, NodeStatInput*, NodeStatRemoveString*> stat;
 };
 struct NodeProg
 {
@@ -1190,6 +1195,21 @@ public:
 			consume();
 			return stat;
 		}
+		else if (peek().has_value() && peek().value().type == TokenType::REMOVE_STRING && peek(1).has_value() && peek(1).value().type == TokenType::open_paren &&
+			peek(2).has_value() && peek(2).value().type == TokenType::variable && peek(3).has_value() && (peek(3).value().type == TokenType::int_val || peek(3).value().type == TokenType::variable))
+			{
+				consume();
+				consume();
+				NodeStatRemoveString* stat_remove = m_allocator.emplace<NodeStatRemoveString>();
+				stat_remove->name = consume().value.value();
+				stat_remove->pos = consume().value.value();
+
+				NodeStat* stat = m_allocator.emplace<NodeStat>();
+				stat->stat = stat_remove;
+				consume();
+				consume();
+				return stat;
+				}
 
 		return {};
 	}

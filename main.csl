@@ -5,7 +5,8 @@ int main()
    string name = "KaisarNigerAlkash";
    printf(name$n);
    name[0] = 's';
-     name[3] = 'A';
+   name[3] = 'A';
+   remove(name,0);
    printf(name$n);
     
   
