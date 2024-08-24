@@ -567,13 +567,32 @@ public:
 			}
 			void operator()(const NodeTermStringVal* string_val)
 			{
+				if (gen.if_stat)
+				{
+					int value = stoi(string_val->value);
+					gen.if_expr.push_back(value);
+					gen.m_output << "   mov rax," << value << "" << '\n';
+					gen.push("rax");
+				}
+				else
 				gen.value = string_val->value;
 			}
 			void operator()(const NodeWordCharVal* char_val)
 			{
-				gen.value = char_val->value.value();
-				gen.m_output << "   mov rax,'" << char_val->value.value()<<"'" << '\n';
-				gen.push("rax");
+				if (!gen.if_stat)
+				{
+					gen.value = char_val->value.value();
+					gen.m_output << "   mov rax,'" << char_val->value.value() << "'" << '\n';
+					gen.push("rax");
+				}
+				else
+				{
+					int value = int(char_val->value.value()[0]) - 48;
+					gen.if_expr.push_back(value);
+					gen.m_output << "   mov rax," <<value << "" << '\n';
+					gen.push("rax");
+				}
+
 				if (gen.m_cur_var.has_value() && gen.m_arr_vars.contains(gen.m_cur_var.value()) && gen.m_arr_vars.at(gen.m_cur_var.value()).type == "character")
 				{
 					gen.m_arr_vars.at(gen.m_cur_var.value()).arr[gen.m_arr_vars.at(gen.m_cur_var.value()).current_size] = gen.m_stack_size-1;
@@ -666,13 +685,28 @@ public:
 				}
 				else if (gen.m_string_vars.contains(term_var->name))
 				{
+					
 					std::string text;
 					for (int i = 0; i < gen.m_string_vars.at(term_var->name).values.size(); i++)
 					{
 						text += gen.m_string_vars.at(term_var->name).values[i];
 					}
-					gen.m_output << "mov rax,'" << text << "'" << std::endl;
-					gen.value = text;
+					if (gen.if_stat)
+					{
+						int value = 0;
+						for (int i = 0; i < text.size(); i++)
+						{
+							value += int(text[i]) - 48;
+						}
+						gen.if_expr.push_back(value);
+						gen.m_output << "   mov rax," << value << "" << '\n';
+						gen.push("rax");
+					}
+					else
+					{
+						gen.m_output << "mov rax,'" << text << "'" << std::endl;
+						gen.value = text;
+					}
 				}
 				else if (gen.m_arr_vars.contains(term_var->name))
 				{

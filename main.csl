@@ -1,14 +1,12 @@
 int main()
 {
+   string name = "Kaisar";
+   string nameA = "Kaisar1";
 
-  int a = 1;
-   string name = "KaisarNigerAlkash";
-   printf(name$n);
-   name[0] = 's';
-   name[3] = 'A';
-   remove(name,0);
-   printf(name$n);
-    
+    if(name != nameA)
+    {
+      printf(name);
+    }
   
   return 1;
 }

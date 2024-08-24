@@ -344,7 +344,7 @@ public:
 				consume();
 
 				str.push_back(consume());
-				while (peek().has_value() && isalpha(peek().value()[0]))
+				while (peek().has_value() && peek().value()[0] != '"')
 				{
 					str.push_back(consume());
 				}

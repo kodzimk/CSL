@@ -12,69 +12,40 @@ temp dq  '',0xA,0xD
 section .text
 global _start
 _start:
-   mov rax,1
+   mov rax,315
    push rax
+   mov rax,316
+   push rax
+    pop rbx
+    pop rax
+    mov rsi, 1
+    cmp rax, rbx
+    jne carry_set0
+    
+    mov rsi, 0
+carry_set0:
+    
+mov rax,rsi
+   push rax
+    pop rax
+    cmp rax,0
+    je label0
+ 
     mov [temp + 0], byte 'K'
     mov [temp + 1], byte 'a'
     mov [temp + 2], byte 'i'
     mov [temp + 3], byte 's'
     mov [temp + 4], byte 'a'
     mov [temp + 5], byte 'r'
-    mov [temp + 6], byte 'N'
-    mov [temp + 7], byte 'i'
-    mov [temp + 8], byte 'g'
-    mov [temp + 9], byte 'e'
-    mov [temp + 10], byte 'r'
-    mov [temp + 11], byte 'A'
-    mov [temp + 12], byte 'l'
-    mov [temp + 13], byte 'k'
-    mov [temp + 14], byte 'a'
-    mov [temp + 15], byte 's'
-    mov [temp + 16], byte 'h'
     mov rax,1
     mov rsi,temp
     mov rdi,1
-    mov rdx,17
+    mov rdx,6
     syscall
     
-    mov edx,newLineLen
-    mov ecx,newLineMsg
-    mov ebx,1
-    mov eax,4
-    int 0x80
-    
-   mov rax,'s'
-   push rax
-   mov rax,'A'
-   push rax
-    mov [temp + 0], byte 'a'
-    mov [temp + 1], byte 'i'
-    mov [temp + 2], byte 'A'
-    mov [temp + 3], byte 'a'
-    mov [temp + 4], byte 'r'
-    mov [temp + 5], byte 'N'
-    mov [temp + 6], byte 'i'
-    mov [temp + 7], byte 'g'
-    mov [temp + 8], byte 'e'
-    mov [temp + 9], byte 'r'
-    mov [temp + 10], byte 'A'
-    mov [temp + 11], byte 'l'
-    mov [temp + 12], byte 'k'
-    mov [temp + 13], byte 'a'
-    mov [temp + 14], byte 's'
-    mov [temp + 15], byte 'h'
-    mov rax,1
-    mov rsi,temp
-    mov rdi,1
-    mov rdx,16
-    syscall
-    
-    mov edx,newLineLen
-    mov ecx,newLineMsg
-    mov ebx,1
-    mov eax,4
-    int 0x80
-    
+    pop rax
+label0:
+  
    mov rax,1
    push rax
     pop rdi
