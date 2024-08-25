@@ -17,10 +17,9 @@ using namespace std;
 class Generator
 {
 public:
-	Generator(NodeProg prog, std::unordered_map<std::string, std::string> m_types, std::vector<int> m_visit_counts)
+	Generator(NodeProg prog, std::unordered_map<std::string, std::string> m_types)
 		: prog(prog),
-		m_types(m_types),
-		m_visit_counts(m_visit_counts)
+		m_types(m_types)
 	{
 
 	}
@@ -51,7 +50,7 @@ public:
 			
 				if (log_paren->varAnd.has_value())
 				{
-					if (gen.if_stat)
+					if (gen.log_stat)
 					{
 						gen.if_expr.push_back(TokenType::AND);
 					}
@@ -74,7 +73,7 @@ public:
 				}
 				else if (log_paren->varOr.has_value())
 				{
-					if (gen.if_stat)
+					if (gen.log_stat)
 					{
 						gen.if_expr.push_back(TokenType::OR);
 					}
@@ -124,7 +123,7 @@ public:
 				gen.carry_count++;
 				if (log_greater->varAnd.has_value())
 				{
-					if (gen.if_stat)
+					if (gen.log_stat)
 					{
 						gen.if_expr.push_back(TokenType::AND);
 					}
@@ -147,7 +146,7 @@ public:
 				}
 				else if (log_greater->varOr.has_value())
 				{
-					if (gen.if_stat)
+					if (gen.log_stat)
 					{
 						gen.if_expr.push_back(TokenType::OR);
 					}
@@ -201,7 +200,7 @@ public:
 				gen.carry_count++;
 				if (log_lesser->varAnd.has_value())
 				{
-					if (gen.if_stat)
+					if (gen.log_stat)
 					{
 						gen.if_expr.push_back(TokenType::AND);
 					}
@@ -224,7 +223,7 @@ public:
 				}
 				else if (log_lesser->varOr.has_value())
 				{
-					if (gen.if_stat)
+					if (gen.log_stat)
 					{
 						gen.if_expr.push_back(TokenType::OR);
 					}
@@ -276,7 +275,7 @@ public:
 				gen.carry_count++;
 				if (log_equal->varAnd.has_value())
 				{
-					if (gen.if_stat)
+					if (gen.log_stat)
 					{
 						gen.if_expr.push_back(TokenType::AND);
 					}
@@ -299,7 +298,7 @@ public:
 				}
 				else if (log_equal->varOr.has_value())
 				{
-					if (gen.if_stat)
+					if (gen.log_stat)
 					{
 						gen.if_expr.push_back(TokenType::OR);
 					}
@@ -350,7 +349,7 @@ public:
 				gen.carry_count++;
 				if (log_not_equal->varAnd.has_value())
 				{
-					if (gen.if_stat)
+					if (gen.log_stat)
 					{
 						gen.if_expr.push_back(TokenType::AND);
 					}
@@ -373,7 +372,7 @@ public:
 				}
 				else if (log_not_equal->varOr.has_value())
 				{
-					if (gen.if_stat)
+					if (gen.log_stat)
 					{
 						gen.if_expr.push_back(TokenType::OR);
 					}
@@ -427,7 +426,7 @@ public:
 				gen.carry_count++;
 				if (log_greater_equal->varAnd.has_value())
 				{
-					if (gen.if_stat)
+					if (gen.log_stat)
 					{
 						gen.if_expr.push_back(TokenType::AND);
 					}
@@ -450,7 +449,7 @@ public:
 				}
 				else if (log_greater_equal->varOr.has_value())
 				{
-					if (gen.if_stat)
+					if (gen.log_stat)
 					{
 						gen.if_expr.push_back(TokenType::OR);
 					}
@@ -504,7 +503,7 @@ public:
 				gen.carry_count++;
 				if (log_lesser_equal->varAnd.has_value())
 				{
-					if (gen.if_stat)
+					if (gen.log_stat)
 					{
 						gen.if_expr.push_back(TokenType::AND);
 					}
@@ -527,7 +526,7 @@ public:
 				}
 				else if (log_lesser_equal->varOr.has_value())
 				{
-					if (gen.if_stat)
+					if (gen.log_stat)
 					{
 						gen.if_expr.push_back(TokenType::OR);
 					}
@@ -552,7 +551,7 @@ public:
 			Generator& gen;
 			void operator()(const NodeTermIntVal* int_val)
 			{
-				if (gen.if_stat && !gen.is_bin_expr)
+				if (gen.log_stat && !gen.is_bin_expr)
 				{
 					gen.if_expr.push_back(stoi(int_val->value.value()));
 				}
@@ -567,7 +566,7 @@ public:
 			}
 			void operator()(const NodeTermStringVal* string_val)
 			{
-				if (gen.if_stat && !gen.is_bin_expr)
+				if (gen.log_stat && !gen.is_bin_expr)
 				{
 					int value = stoi(string_val->value);
 					gen.if_expr.push_back(value);
@@ -579,7 +578,7 @@ public:
 			}
 			void operator()(const NodeWordCharVal* char_val)
 			{
-				if (!gen.if_stat)
+				if (!gen.log_stat)
 				{
 					gen.value = char_val->value.value();
 					gen.m_output << "   mov rax,'" << char_val->value.value() << "'" << '\n';
@@ -605,7 +604,7 @@ public:
 					if (stoi((*int_val)->value.value()) != 0)
 					{
 						gen.m_output << "   mov rax,0" << '\n';
-						if (gen.if_stat && !gen.is_bin_expr)
+						if (gen.log_stat && !gen.is_bin_expr)
 						{
 							gen.if_expr.push_back(0);
 						}
@@ -613,7 +612,7 @@ public:
 					else
 					{
 						gen.m_output << "   mov rax,1" << '\n';
-						if (gen.if_stat && !gen.is_bin_expr)
+						if (gen.log_stat && !gen.is_bin_expr)
 						{
 							gen.if_expr.push_back(1);
 						}
@@ -624,7 +623,7 @@ public:
 				{
 					if (gen.m_int_vars.contains((*var)->name))
 					{
-						if (gen.if_stat && !gen.is_bin_expr)
+						if (gen.log_stat && !gen.is_bin_expr)
 						{
 							if (gen.m_int_values.at((*var)->name) != 0)
 							{
@@ -658,7 +657,7 @@ public:
 			{
 				if (gen.m_int_vars.contains(term_var->name))
 				{
-					if (gen.if_stat && !gen.is_bin_expr && gen.m_int_values.contains(term_var->name))
+					if (gen.log_stat && !gen.is_bin_expr && gen.m_int_values.contains(term_var->name))
 					{
 						gen.if_expr.push_back(gen.m_int_values.at(term_var->name));
 					}
@@ -674,7 +673,7 @@ public:
 				}
 				else if (gen.m_char_vars.contains(term_var->name))
 				{
-					if (gen.if_stat && !gen.is_bin_expr)
+					if (gen.log_stat && !gen.is_bin_expr)
 					{
 						int value = int(gen.m_char_values.at(gen.m_cur_var.value())) - 48;
 						gen.if_expr.push_back(value);
@@ -702,7 +701,7 @@ public:
 					{
 						text += gen.m_string_vars.at(term_var->name).values[i];
 					}
-					if (gen.if_stat && !gen.is_bin_expr)
+					if (gen.log_stat && !gen.is_bin_expr)
 					{
 						int value = 0;
 						for (int i = 0; i < text.size(); i++)
@@ -726,7 +725,7 @@ public:
 						std::cerr << "Out of range of array!!!" << std::endl;
 						exit(EXIT_FAILURE);
 					}
-					if (gen.if_stat && !gen.is_bin_expr)
+					if (gen.log_stat && !gen.is_bin_expr)
 					{
 						gen.if_expr.push_back(gen.m_arr_vars.at(term_var->name).values[gen.m_arr_vars.at(term_var->name).current_size]);
 					}
@@ -750,7 +749,7 @@ public:
 			void operator()(NodeTermParen* term_paren)
 			{
 				bool paren = false;
-				if (gen.if_stat && !gen.is_bin_expr)
+				if (gen.log_stat && !gen.is_bin_expr)
 				{
 					gen.if_expr.push_back(TokenType::open_paren);
 					paren = true;
@@ -764,7 +763,7 @@ public:
 					gen.value.reset();
 				}
 
-				if (gen.if_stat && !gen.is_bin_expr && paren)
+				if (gen.log_stat && !gen.is_bin_expr && paren)
 					gen.if_expr.push_back(TokenType::close_paren);
 
 				gen.m_bin_expr += ")";
@@ -843,9 +842,9 @@ public:
 						exit(EXIT_FAILURE);
 					}
 				}
-				else if((size > -1 && size < gen.m_arr_vars.at(array->name).size) || gen.is_bin_expr || gen.if_stat)
+				else if((size > -1 && size < gen.m_arr_vars.at(array->name).size) || gen.is_bin_expr || gen.log_stat)
 				{
-					if (gen.if_stat && !gen.is_bin_expr)
+					if (gen.log_stat && !gen.is_bin_expr)
 					{
 						gen.if_expr.push_back(gen.m_arr_vars.at(array->name).values[size]);
 					}
@@ -929,7 +928,7 @@ public:
 					{
 							text += gen.m_string_vars.at(str->name).values[i];
 					}
-					if (gen.if_stat && !gen.is_bin_expr)
+					if (gen.log_stat && !gen.is_bin_expr)
 					{
 						gen.value = std::to_string(int(text[size]) - 48);
 						gen.m_output << "   mov rax," << gen.value.value()<< '\n';
@@ -952,7 +951,7 @@ public:
 						}
 					}
 
-					if (gen.if_stat && !gen.is_bin_expr)
+					if (gen.log_stat && !gen.is_bin_expr)
 					{
 						int value = 0;
 						for (int i = 0; i < text.size(); i++)
@@ -1006,21 +1005,86 @@ public:
 				gen.m_bin_expr += "-";
 				gen.value.reset();
 				gen.gen_expr(sub->rhs);
-				gen.m_visit_counts[0]--;
-
-				if (gen.m_visit_counts[0] == 0)
+				if (auto exp_lhs = std::get_if<NodeBinExpr*>(&sub->rhs->var))
 				{
-					if(gen.value.has_value())
-					gen.m_bin_expr += gen.value.value();
+
+				}
+				else
+				{
+					if (gen.value.has_value())
+						gen.m_bin_expr += gen.value.value();
 					gen.value.reset();
-					if (gen.m_visit_counts[0] == 0)
-						gen.m_visit_counts.erase(gen.m_visit_counts.begin());
 				}
 
 
 				gen.pop("rbx");
 				gen.pop("rax");
 				gen.m_output << "    sub rax, rbx\n";
+				gen.push("rax");
+			}
+			void operator()(const NodeBinExprPercent* percent)
+			{
+				std::string niga;
+				gen.gen_expr(percent->lhs);
+				if (gen.m_bin_expr.size() > 0)
+				{
+					for (int i = gen.m_bin_expr.size() - 1; i >= 0; i++)
+					{
+						if (gen.m_bin_expr[i] != ' ' && gen.m_bin_expr[i] != ')')
+						{
+							gen.m_bin_expr += gen.value.value();
+							niga += gen.value.value();
+							break;
+						}
+						else if (gen.m_bin_expr[i] == ')')
+							break;
+					}
+				}
+				else
+				{
+					niga += gen.value.value();
+					gen.m_bin_expr += gen.value.value();
+				}
+
+				gen.m_bin_expr += "%";
+				gen.value.reset();
+				gen.gen_expr(percent->rhs);
+				if (auto exp_lhs = std::get_if<NodeBinExpr*>(&percent->rhs->var))
+				{
+					
+				}
+				else
+				{
+					if (gen.value.has_value())
+						gen.m_bin_expr += gen.value.value();
+					gen.value.reset();
+				}
+
+				for (int i = 0; i < gen.m_bin_expr.size(); i++)
+				{
+					if (gen.m_bin_expr[i] == '%')
+					{
+						niga += gen.m_bin_expr[i];
+						for (int j = i + 1; j < gen.m_bin_expr.size(); j++)
+						{
+							if (gen.m_bin_expr[j] != ' ' && !isdigit(gen.m_bin_expr[j]))
+								break;
+							niga += gen.m_bin_expr[j];
+						}
+						break;
+				    }
+				}
+
+
+				int val = gen.evaluate(niga);
+				if (val == 0)
+				{
+					gen.m_output << "    mov rax,0\n";
+				}
+				else
+				{
+					gen.m_output << "    mov rax,1\n";
+				}
 				gen.push("rax");
 			}
 			void operator()(const NodeBinExprAdd* add)
@@ -1044,16 +1108,15 @@ public:
 				gen.m_bin_expr += "+";
 				gen.value.reset();
 				gen.gen_expr(add->rhs);
-
-				gen.m_visit_counts[0]--;
-
-				if (gen.m_visit_counts[0] == 0)
+				if (auto exp_lhs = std::get_if<NodeBinExpr*>(&add->rhs->var))
 				{
-					if(gen.value.has_value())
-					gen.m_bin_expr += gen.value.value();
+
+				}
+				else
+				{
+					if (gen.value.has_value())
+						gen.m_bin_expr += gen.value.value();
 					gen.value.reset();
-					if (gen.m_visit_counts[0] == 0)
-						gen.m_visit_counts.erase(gen.m_visit_counts.begin());
 				}
 
 				gen.pop("rbx");
@@ -1082,16 +1145,15 @@ public:
 				gen.m_bin_expr += "*";
 				gen.value.reset();
 				gen.gen_expr(multi->rhs);
-				gen.m_visit_counts[0]--;
-
-				if (gen.m_visit_counts[0] == 0)
+				if (auto exp_lhs = std::get_if<NodeBinExpr*>(&multi->rhs->var))
 				{
-					if(gen.value.has_value())
-					gen.m_bin_expr += gen.value.value();
 
+				}
+				else
+				{
+					if (gen.value.has_value())
+						gen.m_bin_expr += gen.value.value();
 					gen.value.reset();
-					if (gen.m_visit_counts[0] == 0)
-						gen.m_visit_counts.erase(gen.m_visit_counts.begin());
 				}
 				gen.pop("rbx");
 				gen.pop("rax");
@@ -1119,15 +1181,15 @@ public:
 				gen.m_bin_expr += "/";
 				gen.value.reset();
 				gen.gen_expr(div->rhs);
-				gen.m_visit_counts[0]--;
-
-				if (gen.m_visit_counts[0] == 0)
+				if (auto exp_lhs = std::get_if<NodeBinExpr*>(&div->rhs->var))
 				{
-					if(gen.value.has_value())
-					gen.m_bin_expr +=gen.value.value();
+
+				}
+				else
+				{
+					if (gen.value.has_value())
+						gen.m_bin_expr += gen.value.value();
 					gen.value.reset();
-					if (gen.m_visit_counts[0] == 0)
-						gen.m_visit_counts.erase(gen.m_visit_counts.begin());
 				}
 				gen.pop("rbx");
 				gen.pop("rax");
@@ -1176,10 +1238,10 @@ public:
 
 			void operator()(const NodeIfPredElif* elif) const
 			{
-				gen.if_stat = true;
+				gen.log_stat = true;
 				gen.gen_expr(elif->expr);
 				gen.is_bin_expr = false;
-				gen.if_stat = false;
+				gen.log_stat = false;
 				gen.log_expr_or();
 				gen.pop("rax");
 				const std::string label = gen.create_label();
@@ -1227,6 +1289,40 @@ public:
 				gen.is_bin_expr = false;
 				gen.pop("rdi");
 				gen.m_output << "    jmp exit\n";
+			}
+			void operator()(const NodeStatWhile* stat_while)
+			{
+				while (true)
+				{
+					gen.log_stat = true;
+					gen.gen_expr(stat_while->expr);
+					gen.is_bin_expr = false;
+					gen.log_stat = false;
+
+					gen.log_expr_or();
+
+					gen.pop("rax");
+			     	const std::string label = gen.create_label();
+					gen.m_output << "    cmp rax,0\n";
+					gen.m_output << "    je " << label << "\n";
+					gen.m_output << " \n";
+
+					gen.m_bin_expr.clear();
+					if (gen.parse_log_expr() == 1)
+					{
+						gen.gen_scope(stat_while->scope);
+						gen.m_output << "  \n";
+						gen.m_bin_expr.clear();
+						gen.m_output << label << ":\n";
+					}
+					else
+					{
+						gen.m_output << label << ":\n";
+						break;
+					}
+				}
+				gen.m_output << "  \n";
+				gen.m_bin_expr.clear();
 			}
 			void operator()(const NodeStatRemoveString* remove_string)
 			{
@@ -1469,10 +1565,10 @@ public:
 			}
 			void operator()(const NodeStatIf* stmt_if) const
 			{
-				gen.if_stat = true;
+				gen.log_stat = true;
 				gen.gen_expr(stmt_if->expr);
 				gen.is_bin_expr = false;
-				gen.if_stat = false;
+				gen.log_stat = false;
 
 				gen.log_expr_or();
 
@@ -1664,6 +1760,8 @@ private:
 			return 1;
 		if (op == '*' || op == '/')
 			return 2;
+		if (op == '%')
+			return 3;
 		return 0;
 	}
 	int applyOp(int a, int b, char op) {
@@ -1672,6 +1770,7 @@ private:
 		case '-': return a - b;
 		case '*': return a * b;
 		case '/': return a / b;
+		case '%': return a % b;
 		}
 	}
 	int evaluate(std::string tokens) {
@@ -1770,34 +1869,37 @@ private:
 	}
 	void end_scope(std::vector<size_t>& m_last_index_of_scope)
 	{
-		for (int i = m_last_index_of_scope[m_last_index_of_scope.size() - 1]; i < m_stack_size;)
+		if (!m_temp_vars.empty())
 		{
-			if (m_int_vars.contains(m_temp_vars[m_temp_vars.size() - 1]))
+			for (int i = m_last_index_of_scope[m_last_index_of_scope.size() - 1]; i < m_stack_size;)
 			{
-				m_int_vars.erase(m_temp_vars[m_temp_vars.size() - 1]);
-				pop("rax");
-
-			}
-			else if(m_char_vars.contains(m_temp_vars[m_temp_vars.size() - 1]))
-			{
-				m_char_vars.erase(m_temp_vars[m_temp_vars.size() - 1]);
-				m_char_values.erase(m_temp_vars[m_temp_vars.size() - 1]);
-				pop("rax");
-			}
-			else if (m_arr_vars.contains(m_temp_vars[m_temp_vars.size() - 1]))
-			{
-				for (int i = m_arr_vars.at(m_temp_vars[m_temp_vars.size() - 1]).size - 1; i >= 0; i--)
+				if (m_int_vars.contains(m_temp_vars[m_temp_vars.size() - 1]))
 				{
+					m_int_vars.erase(m_temp_vars[m_temp_vars.size() - 1]);
+					pop("rax");
+
+				}
+				else if (m_char_vars.contains(m_temp_vars[m_temp_vars.size() - 1]))
+				{
+					m_char_vars.erase(m_temp_vars[m_temp_vars.size() - 1]);
+					m_char_values.erase(m_temp_vars[m_temp_vars.size() - 1]);
 					pop("rax");
 				}
-				m_arr_vars.erase(m_temp_vars[m_temp_vars.size() - 1]);
+				else if (m_arr_vars.contains(m_temp_vars[m_temp_vars.size() - 1]))
+				{
+					for (int i = m_arr_vars.at(m_temp_vars[m_temp_vars.size() - 1]).size - 1; i >= 0; i--)
+					{
+						pop("rax");
+					}
+					m_arr_vars.erase(m_temp_vars[m_temp_vars.size() - 1]);
+				}
+				else if (m_string_vars.contains(m_temp_vars[m_temp_vars.size() - 1]))
+				{
+					m_string_vars.erase(m_temp_vars[m_temp_vars.size() - 1]);
+					pop("rax");
+				}
+				m_temp_vars.erase(m_temp_vars.end() - 1);
 			}
-			else if (m_string_vars.contains(m_temp_vars[m_temp_vars.size() - 1]))
-			{
-				m_string_vars.erase(m_temp_vars[m_temp_vars.size() - 1]);
-				pop("rax");
-			}
-			m_temp_vars.erase(m_temp_vars.end() - 1);
 		}
 
 
@@ -2282,7 +2384,6 @@ private:
 	std::stringstream m_data;
 	std::stringstream m_output;
 
-	std::vector<int> m_visit_counts;
 	std::vector<std::string> m_temp_vars;
 	std::vector<std::variant<int, std::string, TokenType>> if_expr;
 	
@@ -2304,7 +2405,7 @@ private:
 	int orCount = 0;
 	int carry_count = 0;
 
-	bool if_stat = false;
+	bool log_stat = false;
 	bool temp_vars = false;
 	bool is_bin_expr = false;
 };

@@ -46,6 +46,8 @@ enum TokenType
 	 close_string,
 	 string_val,
 	 REMOVE_STRING,
+	 WHILE,
+	 percent,
 };
 inline std::string to_string(const TokenType type)
 {
@@ -107,6 +109,8 @@ inline std::optional<int> bin_prec(const TokenType type)
 	case TokenType::fslash:
 	case TokenType::star:
 		return 1;
+	case TokenType::percent:
+		return 2;
 	default:
 		return {};
 	}
@@ -158,9 +162,14 @@ public:
 					tokens.push_back({ .type = TokenType::ret });
 					str.clear();
 				}
-				if (str == "remove")
+				else if (str == "remove")
 				{
 					tokens.push_back({ .type = TokenType::REMOVE_STRING });
+					str.clear();
+				}
+				else if (str == "while")
+				{
+					tokens.push_back({ .type = TokenType::WHILE });
 					str.clear();
 				}
 				else if (str == "int")
@@ -292,6 +301,12 @@ public:
 			else if (peek().value()[0] == ']')
 			{
 				tokens.push_back({ .type = TokenType::close_braket });
+				consume();
+				continue;
+			}
+			else if (peek().value()[0] == '%')
+			{
+				tokens.push_back({ .type = TokenType::percent });
 				consume();
 				continue;
 			}

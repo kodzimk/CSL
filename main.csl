@@ -1,27 +1,23 @@
 int main()
 {
-   string name = "Kaisar";
-   string nameA = "Kaisar2";
-   char s = 's';
-   char b = 's';
-   b = 'B';
-   s = 'B';
+ int i = 10;
+ int counter = 0;
+ int arr[10]; 
+ while(i > 0)
+ {
+  arr[counter] = i;
+  i--;
+  counter++;
+ }
 
-    if(nameA == "Kaisar2" | 's' == 'd' & 'd' < 'a')
-    {
-    int a = 5;
-    char k = 'l';
-    int j[5];
-      string as = "sasa";
-      if(1 > 0)
+ while(10 > i)
+ {
+    if(arr[i] % 2 == 0)
       {
-        int l = 5;
-      printf(l);
+        printf(arr[i]);
       }
-    }
-
- int k = 5;
-     printf(k);
+    i++;
+ }
   
   return 1;
 }

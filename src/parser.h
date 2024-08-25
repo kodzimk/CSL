@@ -28,6 +28,13 @@ struct NodeBinExprAdd {
 	NodeExpr* lhs;
 	NodeExpr* rhs;
 };
+
+struct NodeBinExprPercent
+{
+	NodeExpr* lhs;
+	NodeExpr* rhs;
+};
+
 struct NodeBinExprMulti {
 	NodeExpr* lhs;
 	NodeExpr* rhs;
@@ -41,7 +48,7 @@ struct NodeBinExprDiv {
 	NodeExpr* rhs;
 };
 struct NodeBinExpr {
-	std::variant<NodeBinExprAdd*, NodeBinExprMulti*, NodeBinExprSub*, NodeBinExprDiv*> var;
+	std::variant<NodeBinExprAdd*, NodeBinExprMulti*, NodeBinExprSub*, NodeBinExprDiv*, NodeBinExprPercent*> var;
 };
 struct NodeLogAnd
 {
@@ -194,9 +201,14 @@ struct NodeStatExit
 {
 	NodeExpr* expr;
 };
+struct NodeStatWhile
+{
+	NodeExpr* expr;
+	NodeScope* scope{};
+};
 struct NodeStat
 {
-	std::variant<NodeStatExit*, NodeStatVar*, NodeStateEq*, NodeStatPrint*, NodeScope*, NodeStatIf*, NodeStatIncerement*, NodeStatDecrement*, NodeStatInput*, NodeStatRemoveString*> stat;
+	std::variant<NodeStatExit*, NodeStatVar*, NodeStateEq*, NodeStatPrint*, NodeScope*, NodeStatIf*, NodeStatIncerement*, NodeStatDecrement*, NodeStatInput*, NodeStatRemoveString*,NodeStatWhile*> stat;
 };
 struct NodeProg
 {
@@ -315,11 +327,6 @@ public:
 				{
 
 					str->expr = parse_expr().value();
-					if (m_visit_count != 0)
-					{
-						m_visit_counts.push_back(m_visit_count);
-					}
-					m_visit_count = 0;
 				}
 				return word;
 			}
@@ -348,11 +355,6 @@ public:
 						array->equalType = to_string(TokenType::integer);
 
 					array->expr = parse_expr().value();
-					if (m_visit_count != 0)
-					{
-						m_visit_counts.push_back(m_visit_count);
-					}
-					m_visit_count = 0;
 				}
 				NodeTerm* word = m_allocator.emplace<NodeTerm>();
 				word->var = array;
@@ -418,25 +420,26 @@ public:
 					expr_lhs2->var = expr_lhs->var;
 					auto add = m_allocator.emplace<NodeBinExprAdd>(expr_lhs2, expr_rhs.value());
 					expr->var = add;
-					m_visit_count++;
 				}
 				else if (type == TokenType::star) {
 					expr_lhs2->var = expr_lhs->var;
 					auto multi = m_allocator.emplace<NodeBinExprMulti>(expr_lhs2, expr_rhs.value());
 					expr->var = multi;
-					m_visit_count++;
 				}
 				else if (type == TokenType::minus) {
 					expr_lhs2->var = expr_lhs->var;
 					auto sub = m_allocator.emplace<NodeBinExprSub>(expr_lhs2, expr_rhs.value());
 					expr->var = sub;
-					m_visit_count++;
 				}
 				else if (type == TokenType::fslash) {
 					expr_lhs2->var = expr_lhs->var;
 					auto div = m_allocator.emplace<NodeBinExprDiv>(expr_lhs2, expr_rhs.value());
 					expr->var = div;
-					m_visit_count++;
+				}
+				else if (type == TokenType::percent) {
+					expr_lhs2->var = expr_lhs->var;
+					auto percent = m_allocator.emplace<NodeBinExprPercent>(expr_lhs2, expr_rhs.value());
+					expr->var = percent;
 				}
 				else {
 					assert(false);
@@ -462,29 +465,14 @@ public:
 						NodeLogExprGreater* log_expr_greater = m_allocator.emplace<NodeLogExprGreater>();
 						log_expr_greater->lhs = m_allocator.emplace<NodeExpr>();
 						log_expr_greater->lhs->var = expr_lhs->var;
-						if (m_visit_count != 0)
-						{
-							m_visit_counts.push_back(m_visit_count);
-						}
-						m_visit_count = 0;
 
 						consume();
 						log_expr_greater->rhs = parse_expr().value();
-						if (m_visit_count != 0)
-						{
-							m_visit_counts.push_back(m_visit_count);
-						}
-						m_visit_count = 0;
 						if (peek().has_value() && peek().value().type == TokenType::AND)
 						{
 							consume();
 							NodeLogAnd* log_and = m_allocator.emplace<NodeLogAnd>();
 							log_and->lhs = parse_expr().value();
-							if (m_visit_count != 0)
-							{
-								m_visit_counts.push_back(m_visit_count);
-							}
-							m_visit_count = 0;
 							log_expr_greater->varAnd = log_and;
 						}
 						else if (peek().has_value() && peek().value().type == TokenType::OR)
@@ -492,11 +480,6 @@ public:
 							consume();
 							NodeLogOr* log_or = m_allocator.emplace<NodeLogOr>();
 							log_or->lhs = parse_expr().value();
-							if (m_visit_count != 0)
-							{
-								m_visit_counts.push_back(m_visit_count);
-							}
-							m_visit_count = 0;
 							log_expr_greater->varOr = log_or;
 						}
 						log_expr->var = log_expr_greater;
@@ -508,28 +491,15 @@ public:
 						NodeLogExprLesser* log_expr_lesser = m_allocator.emplace<NodeLogExprLesser>();
 						log_expr_lesser->lhs = m_allocator.emplace<NodeExpr>();
 						log_expr_lesser->lhs->var = expr_lhs->var;
-						if (m_visit_count != 0)
-						{
-							m_visit_counts.push_back(m_visit_count);
-						}
-						m_visit_count = 0;
 						consume();
 						log_expr_lesser->rhs = parse_expr().value();
-						if (m_visit_count != 0)
-						{
-							m_visit_counts.push_back(m_visit_count);
-						}
-						m_visit_count = 0;
+
 						if (peek().has_value() && peek().value().type == TokenType::AND)
 						{
 							consume();
 							NodeLogAnd* log_and = m_allocator.emplace<NodeLogAnd>();
 							log_and->lhs = parse_expr().value();
-							if (m_visit_count != 0)
-							{
-								m_visit_counts.push_back(m_visit_count);
-							}
-							m_visit_count = 0;
+
 							log_expr_lesser->varAnd = log_and;
 						}
 						else if (peek().has_value() && peek().value().type == TokenType::OR)
@@ -537,11 +507,7 @@ public:
 							consume();
 							NodeLogOr* log_or = m_allocator.emplace<NodeLogOr>();
 							log_or->lhs = parse_expr().value();
-							if (m_visit_count != 0)
-							{
-								m_visit_counts.push_back(m_visit_count);
-							}
-							m_visit_count = 0;
+
 							log_expr_lesser->varOr = log_or;
 						}
 						log_expr->var = log_expr_lesser;
@@ -553,28 +519,16 @@ public:
 						NodeLogExprEqual* log_expr_equal = m_allocator.emplace<NodeLogExprEqual>();
 						log_expr_equal->lhs = m_allocator.emplace<NodeExpr>();
 						log_expr_equal->lhs->var = expr_lhs->var;
-						if (m_visit_count != 0)
-						{
-							m_visit_counts.push_back(m_visit_count);
-						}
-						m_visit_count = 0;
+
 						consume();
 						log_expr_equal->rhs = parse_expr().value();
-						if (m_visit_count != 0)
-						{
-							m_visit_counts.push_back(m_visit_count);
-						}
-						m_visit_count = 0;
+
 						if (peek().has_value() && peek().value().type == TokenType::AND)
 						{
 							consume();
 							NodeLogAnd* log_and = m_allocator.emplace<NodeLogAnd>();
 							log_and->lhs = parse_expr().value();
-							if (m_visit_count != 0)
-							{
-								m_visit_counts.push_back(m_visit_count);
-							}
-							m_visit_count = 0;
+
 							log_expr_equal->varAnd = log_and;
 						}
 						else if (peek().has_value() && peek().value().type == TokenType::OR)
@@ -582,11 +536,7 @@ public:
 							consume();
 							NodeLogOr* log_or = m_allocator.emplace<NodeLogOr>();
 							log_or->lhs = parse_expr().value();
-							if (m_visit_count != 0)
-							{
-								m_visit_counts.push_back(m_visit_count);
-							}
-							m_visit_count = 0;
+
 							log_expr_equal->varOr = log_or;
 						}
 						log_expr->var = log_expr_equal;
@@ -598,28 +548,16 @@ public:
 						NodeLogExprNotEqual* log_expr_notequal = m_allocator.emplace<NodeLogExprNotEqual>();
 						log_expr_notequal->lhs = m_allocator.emplace<NodeExpr>();
 						log_expr_notequal->lhs->var = expr_lhs->var;
-						if (m_visit_count != 0)
-						{
-							m_visit_counts.push_back(m_visit_count);
-						}
-						m_visit_count = 0;
+
 						consume();
 						log_expr_notequal->rhs = parse_expr().value();
-						if (m_visit_count != 0)
-						{
-							m_visit_counts.push_back(m_visit_count);
-						}
-						m_visit_count = 0;
+
 						if (peek().has_value() && peek().value().type == TokenType::AND)
 						{
 							consume();
 							NodeLogAnd* log_and = m_allocator.emplace<NodeLogAnd>();
 							log_and->lhs = parse_expr().value();
-							if (m_visit_count != 0)
-							{
-								m_visit_counts.push_back(m_visit_count);
-							}
-							m_visit_count = 0;
+
 							log_expr_notequal->varAnd = log_and;
 						}
 						else if (peek().has_value() && peek().value().type == TokenType::OR)
@@ -627,11 +565,7 @@ public:
 							consume();
 							NodeLogOr* log_or = m_allocator.emplace<NodeLogOr>();
 							log_or->lhs = parse_expr().value();
-							if (m_visit_count != 0)
-							{
-								m_visit_counts.push_back(m_visit_count);
-							}
-							m_visit_count = 0;
+
 							log_expr_notequal->varOr = log_or;
 						}
 						log_expr->var = log_expr_notequal;
@@ -643,28 +577,16 @@ public:
 						NodeLogExprGreaterEqual* log_expr_greater_equal = m_allocator.emplace<NodeLogExprGreaterEqual>();
 						log_expr_greater_equal->lhs = m_allocator.emplace<NodeExpr>();
 						log_expr_greater_equal->lhs->var = expr_lhs->var;
-						if (m_visit_count != 0)
-						{
-							m_visit_counts.push_back(m_visit_count);
-						}
-						m_visit_count = 0;
+
 						consume();
 						log_expr_greater_equal->rhs = parse_expr().value();
-						if (m_visit_count != 0)
-						{
-							m_visit_counts.push_back(m_visit_count);
-						}
-						m_visit_count = 0;
+
 						if (peek().has_value() && peek().value().type == TokenType::AND)
 						{
 							consume();
 							NodeLogAnd* log_and = m_allocator.emplace<NodeLogAnd>();
 							log_and->lhs = parse_expr().value();
-							if (m_visit_count != 0)
-							{
-								m_visit_counts.push_back(m_visit_count);
-							}
-							m_visit_count = 0;
+
 							log_expr_greater_equal->varAnd = log_and;
 						}
 						else if (peek().has_value() && peek().value().type == TokenType::OR)
@@ -672,11 +594,7 @@ public:
 							consume();
 							NodeLogOr* log_or = m_allocator.emplace<NodeLogOr>();
 							log_or->lhs = parse_expr().value();
-							if (m_visit_count != 0)
-							{
-								m_visit_counts.push_back(m_visit_count);
-							}
-							m_visit_count = 0;
+
 							log_expr_greater_equal->varOr = log_or;
 						}
 						log_expr->var = log_expr_greater_equal;
@@ -688,28 +606,16 @@ public:
 						NodeLogExprLesserEqual* log_expr_lesser_equal = m_allocator.emplace<NodeLogExprLesserEqual>();
 						log_expr_lesser_equal->lhs = m_allocator.emplace<NodeExpr>();
 						log_expr_lesser_equal->lhs->var = expr_lhs->var;
-						if (m_visit_count != 0)
-						{
-							m_visit_counts.push_back(m_visit_count);
-						}
-						m_visit_count = 0;
+
 						consume();
 						log_expr_lesser_equal->rhs = parse_expr().value();
-						if (m_visit_count != 0)
-						{
-							m_visit_counts.push_back(m_visit_count);
-						}
-						m_visit_count = 0;
+
 						if (peek().has_value() && peek().value().type == TokenType::AND)
 						{
 							consume();
 							NodeLogAnd* log_and = m_allocator.emplace<NodeLogAnd>();
 							log_and->lhs = parse_expr().value();
-							if (m_visit_count != 0)
-							{
-								m_visit_counts.push_back(m_visit_count);
-							}
-							m_visit_count = 0;
+
 							log_expr_lesser_equal->varAnd = log_and;
 						}
 						else if (peek().has_value() && peek().value().type == TokenType::OR)
@@ -717,11 +623,7 @@ public:
 							consume();
 							NodeLogOr* log_or = m_allocator.emplace<NodeLogOr>();
 							log_or->lhs = parse_expr().value();
-							if (m_visit_count != 0)
-							{
-								m_visit_counts.push_back(m_visit_count);
-							}
-							m_visit_count = 0;
+
 							log_expr_lesser_equal->varOr = log_or;
 						}
 						log_expr->var = log_expr_lesser_equal;
@@ -735,19 +637,11 @@ public:
 					NodeLogExprParen* log_paren = m_allocator.emplace<NodeLogExprParen>();
 					log_paren->lhs = m_allocator.emplace<NodeExpr>();
 					log_paren->lhs->var = expr_lhs->var;
-					if (m_visit_count != 0)
-					{
-						m_visit_counts.push_back(m_visit_count);
-					}
-					m_visit_count = 0;
+
 					consume();
 					NodeLogAnd* log_and = m_allocator.emplace<NodeLogAnd>();
 					log_and->lhs = parse_expr().value();
-					if (m_visit_count != 0)
-					{
-						m_visit_counts.push_back(m_visit_count);
-					}
-					m_visit_count = 0;
+
 					log_paren->varAnd = log_and;
 
 					log_expr->var = log_paren;
@@ -759,19 +653,11 @@ public:
 					NodeLogExprParen* log_paren = m_allocator.emplace<NodeLogExprParen>();
 					log_paren->lhs = m_allocator.emplace<NodeExpr>();
 					log_paren->lhs->var = expr_lhs->var;
-					if (m_visit_count != 0)
-					{
-						m_visit_counts.push_back(m_visit_count);
-					}
-					m_visit_count = 0;
+
 					consume();
 					NodeLogOr* log_or = m_allocator.emplace<NodeLogOr>();
 					log_or->lhs = parse_expr().value();
-					if (m_visit_count != 0)
-					{
-						m_visit_counts.push_back(m_visit_count);
-					}
-					m_visit_count = 0;
+
 					log_paren->varOr = log_or;
 
 					log_expr->var = log_paren;
@@ -844,11 +730,7 @@ public:
 			NodeStat* stat = m_allocator.emplace<NodeStat>();
 			NodeStatExit* stat_exit = m_allocator.emplace<NodeStatExit>();
 			stat_exit->expr = parse_expr().value();
-			if (m_visit_count != 0)
-			{
-				m_visit_counts.push_back(m_visit_count);
-			}
-			m_visit_count = 0;
+
 			consume();
 			bin_expr = false;
 			stat->stat = stat_exit;
@@ -872,11 +754,7 @@ public:
 			stat_var->name = consume().value.value();
 			consume();
 			stat_var->expr = parse_expr().value();
-			if (m_visit_count != 0)
-			{
-				m_visit_counts.push_back(m_visit_count);
-			}
-			m_visit_count = 0;
+
 			consume();
 			bin_expr = false;
 
@@ -913,11 +791,7 @@ public:
 					(*str)->name = stat_var->name;
 				}
 			}
-			if (m_visit_count != 0)
-			{
-				m_visit_counts.push_back(m_visit_count);
-			}
-			m_visit_count = 0;
+
 			consume();
 			bin_expr = false;
 
@@ -935,10 +809,6 @@ public:
 			stat_var->type = to_string(consume().type);
 			stat_var->name = consume().value.value();
 			stat_var->expr = parse_expr().value();
-			if (m_visit_count != 0)
-			{
-				m_visit_counts.push_back(m_visit_count);
-			}
 			if (auto expr = std::get_if<NodeTerm*>(&stat_var->expr->var))
 			{
 				if (auto array = std::get_if<NodeTermArray*>(&((*expr)->var)))
@@ -948,7 +818,6 @@ public:
 				}
 				
 			}
-			m_visit_count = 0;
 			consume();
 			bin_expr = false;
 
@@ -973,11 +842,6 @@ public:
 			stat_eq->variableName = consume().value.value();
 			consume();
 			stat_eq->expr = parse_expr().value();
-			if (m_visit_count != 0)
-			{
-				m_visit_counts.push_back(m_visit_count);
-			}
-			m_visit_count = 0;
 			consume();
 			bin_expr = false;
 			if (stat_eq->type == "character")
@@ -1017,10 +881,7 @@ public:
 					}
 				}
 				is_string = false;
-				if (m_visit_count != 0)
-				{
-					m_visit_counts.push_back(m_visit_count);
-				}
+
 				if (auto expr = std::get_if<NodeTerm*>(&stat_eq->expr->var))
 				{
 					if (auto array = std::get_if<NodeTermArray*>(&((*expr)->var)))
@@ -1028,7 +889,6 @@ public:
 						(*array)->name = stat_eq->variableName;
 					}
 				}
-				m_visit_count = 0;
 				consume();
 				bin_expr = false;
 
@@ -1047,11 +907,6 @@ public:
 			std::string type = to_string(peek(1).value().type);
 			consume();
 			stat_var->expr = parse_expr().value();
-			if (m_visit_count != 0)
-			{
-				m_visit_counts.push_back(m_visit_count);
-			}
-			m_visit_count = 0;
 
 			bin_expr = false;
 
@@ -1100,11 +955,6 @@ public:
 				}
 			}
 
-			if (m_visit_count != 0)
-			{
-				m_visit_counts.push_back(m_visit_count);
-			}
-			m_visit_count = 0;
 			stat->stat = stat_print;
 			bin_expr = false;
 
@@ -1124,11 +974,7 @@ public:
 			if (const auto expr = parse_expr()) {
 				stmt_if->expr = expr.value();
 				bin_expr = false;
-				if (m_visit_count != 0)
-				{
-					m_visit_counts.push_back(m_visit_count);
-				}
-				m_visit_count = 0;
+
 			}
 			else {
 				std::cerr << "Invalid expression" << std::endl;
@@ -1200,6 +1046,28 @@ public:
 			consume();
 			return stat;
 		}
+		else if (auto if_ = try_consume(TokenType::WHILE)) {
+			try_consume(TokenType::open_paren, "Expected `(`");
+			auto stmt_while = m_allocator.emplace<NodeStatWhile>();
+			if (const auto expr = parse_expr()) {
+				stmt_while->expr = expr.value();
+				bin_expr = false;
+			}
+			else {
+				std::cerr << "Invalid expression" << std::endl;
+				exit(EXIT_FAILURE);
+			}
+			try_consume(TokenType::close_paren, "Expected `)`");
+			if (const auto scope = parse_scope()) {
+				stmt_while->scope = scope.value();
+			}
+			else {
+				std::cerr << "Invalid scope" << std::endl;
+				exit(EXIT_FAILURE);
+			}
+			auto stmt = m_allocator.emplace<NodeStat>(stmt_while);
+			return stmt;
+			}
 		else if (peek().has_value() && peek().value().type == TokenType::REMOVE_STRING && peek(1).has_value() && peek(1).value().type == TokenType::open_paren &&
 			peek(2).has_value() && peek(2).value().type == TokenType::variable && peek(3).has_value() && (peek(3).value().type == TokenType::int_val || peek(3).value().type == TokenType::variable))
 			{
@@ -1286,7 +1154,5 @@ private:
 	std::vector<std::string> m_string;
 public:
 	int cin_count = 0;
-	int m_visit_count = 0;
-	std::vector<int> m_visit_counts;
 	std::unordered_map<std::string, std::string> m_vars;
 };
