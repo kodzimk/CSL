@@ -138,8 +138,12 @@ struct NodeTermStringVal
 {
 	std::string value;
 };
+struct NodeTermNegative
+{
+	std::variant <NodeTermIntVal*, NodeTermVar*> var;
+};
 struct NodeTerm {
-	std::variant<NodeTermIntVal*, NodeTermVar*, NodeTermParen*, NodeWordCharVal*, NodeLogExpr*, NodeTermOpposet*,NodeTermArray*,NodeTermString*, NodeTermStringVal*> var;
+	std::variant<NodeTermIntVal*, NodeTermVar*, NodeTermParen*, NodeWordCharVal*, NodeLogExpr*, NodeTermOpposet*,NodeTermArray*,NodeTermString*, NodeTermStringVal*,NodeTermNegative*> var;
 };
 struct NodeExpr {
 	std::variant<NodeTerm*, NodeBinExpr*, NodeLogExpr*> var;
@@ -208,7 +212,7 @@ struct NodeStatWhile
 };
 struct NodeStat
 {
-	std::variant<NodeStatExit*, NodeStatVar*, NodeStateEq*, NodeStatPrint*, NodeScope*, NodeStatIf*, NodeStatIncerement*, NodeStatDecrement*, NodeStatInput*, NodeStatRemoveString*,NodeStatWhile*> stat;
+	std::variant<NodeStatExit*, NodeStatVar*, NodeStateEq*, NodeStatPrint*, NodeScope*, NodeStatIf*, NodeStatIncerement*, NodeStatDecrement*, NodeStatInput*, NodeStatRemoveString*, NodeStatWhile*> stat;
 };
 struct NodeProg
 {
@@ -240,13 +244,23 @@ public:
 		else if (auto int_lit = try_consume(TokenType::minus))
 		{
 			NodeTerm* term = m_allocator.emplace<NodeTerm>();
-			if (auto int_lit = try_consume(TokenType::int_val))
+			NodeTermNegative* neg = m_allocator.emplace<NodeTermNegative>();
+
+			if (auto val = try_consume(TokenType::int_val))
 			{
 				NodeTermIntVal* int_val = m_allocator.emplace<NodeTermIntVal>();
-				int_val->value = int_lit.value().value.value();
-				int_val->value.value().insert(int_val->value.value().begin(),'-');
-				term->var = int_val;
+				int_val->value = val.value().value.value();
+				int_val->value.value().insert(int_val->value.value().begin(), '-');
+				neg->var = int_val;
 			}
+			else if (auto var = try_consume(TokenType::variable))
+			{
+				NodeTermVar* var_val = m_allocator.emplace<NodeTermVar>();
+				var_val->name = var.value().value.value();
+				term->var = var_val;
+				neg->var = var_val;
+			}
+			term->var = neg;
 			
 			return term;
 		}
@@ -827,10 +841,11 @@ public:
 		}
 		else if (peek().has_value() && peek().value().type == TokenType::variable && peek(1).has_value() && peek(1).value().type == TokenType::eq
 			&& peek(2).has_value() && 	(peek(2).value().type == TokenType::int_val || peek(2).value().type == TokenType::variable || peek(2).value().type == TokenType::open_char
-			|| peek(2).value().type == open_paren || peek(2).value().type == open_string))
+			|| peek(2).value().type == open_paren || peek(2).value().type == open_string || peek(2).value().type == TokenType::minus))
 		{
 			if ((peek(2).value().value.has_value() && m_vars.contains(peek(2).value().value.value()) &&  m_vars.at(peek().value().value.value()) != m_vars.at(peek(2).value().value.value())) &&
-				(to_string(peek(2).value().type) == "variable" && m_vars.at(peek().value().value.value()) != to_string(peek(2).value().type)) && to_string(peek(2).value().type) != "open_paren")
+				(to_string(peek(2).value().type) == "variable" && m_vars.at(peek().value().value.value()) != to_string(peek(2).value().type)) && to_string(peek(2).value().type) != "open_paren" && 
+				to_string(peek(2).value().type) != "`-`")
 			{
 				std::cerr << "Invalid value!!" << std::endl;
 				exit(EXIT_FAILURE);
@@ -1033,12 +1048,17 @@ public:
 		{
 			consume();
 			consume();
-			cin_count++;
 			NodeStatInput* stat_input = m_allocator.emplace<NodeStatInput>();
 			stat_input->expr = parse_expr().value();
 			NodeTerm* term = std::get<NodeTerm*>(stat_input->expr->var);
-			NodeTermVar* var = std::get<NodeTermVar*>(term->var);
-			stat_input->name = var->name;
+			if (auto var = std::get_if<NodeTermVar*>(&term->var))
+			{
+			  stat_input->name = (*var)->name;
+			}
+			else
+			{
+
+			}
 
 			NodeStat* stat = m_allocator.emplace<NodeStat>();
 			stat->stat = stat_input;
@@ -1148,11 +1168,10 @@ private:
 	size_t m_index = 0;
 	bool bin_expr = false;
 	bool opposet_on = false;
+	bool is_string = false;
 	ArenaAllocator m_allocator;
 	std::vector<Token> m_tokens;
-	bool is_string = false;
 	std::vector<std::string> m_string;
 public:
-	int cin_count = 0;
 	std::unordered_map<std::string, std::string> m_vars;
 };

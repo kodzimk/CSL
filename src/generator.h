@@ -653,6 +653,42 @@ public:
 					exit(EXIT_FAILURE);
 				}
 			}
+			void operator()(const NodeTermNegative* term_neg)
+			{
+				if (auto int_val = std::get_if<NodeTermIntVal*>(&term_neg->var))
+				{
+					int val = stoi((*int_val)->value.value());
+
+					gen.m_output << "   mov rax,"<<val << '\n';
+					gen.push("rax");
+					if (gen.log_stat && !gen.is_bin_expr)
+					{
+						gen.if_expr.push_back(val);
+					}
+					gen.value = (*int_val)->value.value();
+				}
+				else if (auto var = std::get_if<NodeTermVar*>(&term_neg->var))
+				{
+					if (gen.m_int_vars.contains((*var)->name))
+					{
+						int val = -1 * gen.m_int_values.at((*var)->name);
+						if (gen.log_stat && !gen.is_bin_expr)
+						{
+							gen.if_expr.push_back(val);
+						}
+						else
+							gen.value = std::to_string(val);
+
+						gen.m_output << "   mov rax," << val << '\n';
+						gen.push("rax");
+					}
+				}
+				else
+				{
+					std::cerr << "Invalid Expr!" << std::endl;
+					exit(EXIT_FAILURE);
+				}
+			}
 			void operator()(const NodeTermVar* term_var)
 			{
 				if (gen.m_int_vars.contains(term_var->name))
@@ -2385,7 +2421,7 @@ private:
 	std::stringstream m_output;
 
 	std::vector<std::string> m_temp_vars;
-	std::vector<std::variant<int, std::string, TokenType>> if_expr;
+	std::vector<std::variant<int,std::string, TokenType>> if_expr;
 	
 
 	std::unordered_map<std::string, int> m_int_values;

@@ -3,8 +3,10 @@ int main()
  int i = 10;
  int counter = 0;
  int arr[10]; 
+  cin(arr[0]);
  while(i > 0)
  {
+
   arr[counter] = i;
   i--;
   counter++;
@@ -16,8 +18,12 @@ int main()
       {
         printf(arr[i]);
       }
+      else if(arr[i] % 2 == 1)
+      {
+        printf("Niger: ");
+        printf(arr[i]);
+      }
     i++;
- }
-  
+ } 
   return 1;
 }
