@@ -1,31 +1,54 @@
-# CSL
+<div align="center">
+<pre>
+CSL(C Styled Language)
+---------------------------------------------------
+Lanuage written in c++ with decent percent of syntax as in c
+</pre>
+</div>
 
-CSL(C Style Language) - written fully in c++.
+# Installation andd running 
 
-# Features
+install this repo(Min version of c++ 20).
 
-1) Enter function(int main())
-2) Data types(int,char,string,bool,double)
-3) All features for data types such as giving number and variables
-4) increment and decrement
-5) output smth(printf function)
-6) exit program(return expr;)
-7) if elseif else syntax
-8) scope syntax
-9) type safety
-10) type casting
-11) loop(while)
-12) static array
-13) mathematical operations
-14) logical operations
-15) struct
-16) functions
-17) preproccesors and defines
-18) handling with memory
-19) dynamic allocating memory(kalloc and kfree)
-20) pointers
-21) trying create oop basics
+```sh
+git clone (link of project)
+cmake -B ./build
+run.sh
+```
 
+# Examples
+
+```sh
+int main()
+{
+  int i = 10;
+  int counter = 0;
+  int arr[10]; 
+  cin(arr[0]);
+
+  while(i > 0)
+  {
+  arr[counter] = i;
+  i--;
+  counter++;
+  }
+
+ while(10 > i)
+ {
+    if(arr[i] % 2 == 0)
+      {
+        printf(arr[i]);
+      }
+      else if(arr[i] % 2 == 1)
+      {
+        printf("Niger: ");
+        printf(arr[i]);
+      }
+    i++;
+ } 
+  return 1;
+}
+```
 # Requirements
-1) Linux(any type)(suggest Ubuntu latest version)
-2) nasm
+* Linux(any type)(suggest Ubuntu latest version)<br />
+* nasm
