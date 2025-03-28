@@ -1,5 +1,3 @@
-
-
 #include"generator.h"
 
 
@@ -32,7 +30,7 @@ int main(int argc,char** argv)
         std::fstream file("out.asm", std::ios::out);
         file << generator.gen_prog();
     }
-
+    system("cd ..");
     system("bash");
 	return 0;
 }

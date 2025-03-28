@@ -1,5 +1,5 @@
 #!/bin/bash
-nasm -felf64 out.asm
-ld -o out out.o
+nasm -felf64 build/out.asm
+ld -o out build/out.o
 ./out
 echo $?

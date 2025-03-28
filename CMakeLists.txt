@@ -1,5 +1,13 @@
-cmake_minimum_required(VERSION 3.29)
+cmake_minimum_required(VERSION 3.5)
 
-project(CSL)
+project (CSL)
 
-add_executable(csl src/main.cpp)
+file(GLOB SOURCES
+    src/*.h
+    src/*.cpp
+    main.csl
+)
+ set(CMAKE_CXX_STANDARD 20)
+
+
+add_executable(CSL ${SOURCES})
