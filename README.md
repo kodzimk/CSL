@@ -10,45 +10,38 @@ Lanuage written in c++ with decent percent of syntax as in c
 
 install this repo(Min version of c++ 20).
 
+Build<br>
 ```sh
 git clone (link of project)
 cmake -B ./build
-run.sh
 ```
+
+Run<br>
+```sh
+"add main.csl file in build folder and run project then" run this scirpt above
+./run.sh
+```
+
 
 # Examples
 
 ```sh
 int main()
 {
-  int i = 10;
-  int counter = 0;
-  int arr[10]; 
-  cin(arr[0]);
-
-  while(i > 0)
+  int i = 0;
+  int arr[10];
+  while(10 > i)
   {
-  arr[counter] = i;
-  i--;
-  counter++;
+    arr[i] = i;
+    printf("Array value: ");
+    printf(arr[i);
+    i++;
   }
 
- while(10 > i)
- {
-    if(arr[i] % 2 == 0)
-      {
-        printf(arr[i]);
-      }
-      else if(arr[i] % 2 == 1)
-      {
-        printf("Niger: ");
-        printf(arr[i]);
-      }
-    i++;
- } 
   return 1;
 }
 ```
 # Requirements
+* cmake
 * Linux(any type)(suggest Ubuntu latest version)<br />
 * nasm
